@@ -45,6 +45,12 @@ class CiWorkflowContractTests(unittest.TestCase):
         self.assertIn('"repository": os.environ["GITHUB_REPOSITORY"]', self.workflow)
         self.assertIn('"sha": os.environ["GITHUB_SHA"]', self.workflow)
 
+    def test_rust_format_gate_is_scoped_to_changed_rust_files(self) -> None:
+        self.assertIn("git diff --diff-filter=ACMR --name-only", self.workflow)
+        self.assertIn("rust_files", self.workflow)
+        self.assertIn("rustfmt --check", self.workflow)
+        self.assertNotIn("cargo fmt --all -- --check", self.workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
