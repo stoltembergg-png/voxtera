@@ -175,6 +175,7 @@ class TlsCertificateTests(unittest.TestCase):
 class PlayActionTests(unittest.TestCase):
     """Reproduce the silent-failure bug when game binary lacks +x."""
 
+    @unittest.skipIf(os.name == "nt", "Windows does not expose POSIX execute-bit semantics")
     def test_popen_raises_permission_error_when_game_binary_is_not_executable(self) -> None:
         """Demonstrates that the current _play code path fails silently on macOS
         because the extracted game binary is -rw-r--r-- (no execute bit)."""
@@ -202,16 +203,19 @@ class PlayActionTests(unittest.TestCase):
             with zipfile.ZipFile(zip_path, "r") as zf:
                 zf.extractall(install_dir)
             spec = platform_spec("Darwin")
-            # Before the fix: files are 644
             exe = install_dir / "Voxtera.app" / "Contents" / "MacOS" / "Voxtera"
             bin_ = install_dir / "Voxtera.app" / "Contents" / "MacOS" / "Voxtera-bin"
-            self.assertFalse(os.access(exe, os.X_OK))
-            self.assertFalse(os.access(bin_, os.X_OK))
+            if os.name != "nt":
+                self.assertFalse(os.access(exe, os.X_OK))
+                self.assertFalse(os.access(bin_, os.X_OK))
             # Apply the fix
             launcher._fix_extracted_executable_permissions(str(install_dir), spec)
-            # After the fix: both must be executable
-            self.assertTrue(os.access(exe, os.X_OK))
-            self.assertTrue(os.access(bin_, os.X_OK))
+            if os.name != "nt":
+                self.assertTrue(os.access(exe, os.X_OK))
+                self.assertTrue(os.access(bin_, os.X_OK))
+            else:
+                self.assertTrue(exe.is_file())
+                self.assertTrue(bin_.is_file())
 
 
 class ArchiveValidationTests(unittest.TestCase):

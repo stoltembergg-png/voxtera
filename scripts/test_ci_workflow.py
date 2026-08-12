@@ -1,0 +1,56 @@
+from __future__ import annotations
+
+from pathlib import Path
+import unittest
+
+
+WORKFLOW = Path(__file__).parents[1] / ".github" / "workflows" / "ci.yml"
+
+
+class CiWorkflowContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.workflow = WORKFLOW.read_text(encoding="utf-8")
+
+    def test_declares_all_required_producers(self) -> None:
+        for job in (
+            "rust-format:",
+            "rust-server-test:",
+            "launcher-tests:",
+            "site-tests:",
+            "release-contract:",
+        ):
+            self.assertIn(job, self.workflow)
+
+    def test_quality_gate_is_always_run_and_depends_on_all_producers(self) -> None:
+        self.assertIn("name: CI / Quality Gate", self.workflow)
+        self.assertIn("if: ${{ always() }}", self.workflow)
+        for job in (
+            "- rust-format",
+            "- rust-server-test",
+            "- launcher-tests",
+            "- site-tests",
+            "- release-contract",
+        ):
+            self.assertIn(job, self.workflow)
+
+    def test_pr_jobs_do_not_receive_write_permissions_or_deploy_secrets(self) -> None:
+        self.assertIn("permissions:\n  contents: read", self.workflow)
+        self.assertNotIn("pull_request_target", self.workflow)
+        self.assertNotIn("VERCEL_TOKEN", self.workflow)
+        self.assertNotIn("SSH_PRIVATE_KEY", self.workflow)
+
+    def test_quality_gate_invokes_the_fail_closed_evaluator(self) -> None:
+        self.assertIn("python scripts/quality_gate.py quality-gate-results.json", self.workflow)
+        self.assertIn('"repository": os.environ["GITHUB_REPOSITORY"]', self.workflow)
+        self.assertIn('"sha": os.environ["GITHUB_SHA"]', self.workflow)
+
+    def test_rust_format_gate_is_scoped_to_changed_rust_files(self) -> None:
+        self.assertIn("git diff --diff-filter=ACMR --name-only", self.workflow)
+        self.assertIn("rust_files", self.workflow)
+        self.assertIn("rustfmt --edition 2024 --check", self.workflow)
+        self.assertNotIn("cargo fmt --all -- --check", self.workflow)
+
+
+if __name__ == "__main__":
+    unittest.main()
