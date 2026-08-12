@@ -1,5 +1,5 @@
-export const WINDOWS_LAUNCHER_VERSION = "0.4.0";
-export const MACOS_LAUNCHER_VERSION = "0.4.3";
+export const WINDOWS_LAUNCHER_VERSION = "0.4.4";
+export const MACOS_LAUNCHER_VERSION = "0.4.4";
 
 export const DOWNLOADS = {
   windows: `/downloads/VoxteraLauncher-windows-v${WINDOWS_LAUNCHER_VERSION}.exe`,

@@ -29,7 +29,7 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 is_macos = sys.platform == "darwin"
-LAUNCHER_VERSION = os.environ.get("VOXTERA_LAUNCHER_VERSION", "0.4.3")
+LAUNCHER_VERSION = os.environ.get("VOXTERA_LAUNCHER_VERSION", "0.4.4")
 
 exe = EXE(
     pyz,

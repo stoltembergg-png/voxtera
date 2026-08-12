@@ -43,11 +43,11 @@ describe("App", () => {
 
     expect(windowsDownloads).toHaveLength(2);
     windowsDownloads.forEach((action) => {
-      expect(action).toHaveAttribute("href", "/downloads/VoxteraLauncher-windows-v0.4.0.exe");
+      expect(action).toHaveAttribute("href", "/downloads/VoxteraLauncher-windows-v0.4.4.exe");
     });
     expect(macosDownloads).toHaveLength(2);
     macosDownloads.forEach((action) => {
-      expect(action).toHaveAttribute("href", "/downloads/VoxteraLauncher-macos-x86_64-v0.4.3.app.zip");
+      expect(action).toHaveAttribute("href", "/downloads/VoxteraLauncher-macos-x86_64-v0.4.4.app.zip");
     });
   });
 
@@ -60,11 +60,11 @@ describe("App", () => {
     );
     expect(screen.getAllByRole("link", { name: "Baixar launcher para Windows (.exe)" })[0]).toHaveAttribute(
       "href",
-      "/downloads/VoxteraLauncher-windows-v0.4.0.exe",
+      "/downloads/VoxteraLauncher-windows-v0.4.4.exe",
     );
     expect(screen.getAllByRole("link", { name: "Baixar launcher para macOS (.app)" })[0]).toHaveAttribute(
       "href",
-      "/downloads/VoxteraLauncher-macos-x86_64-v0.4.3.app.zip",
+      "/downloads/VoxteraLauncher-macos-x86_64-v0.4.4.app.zip",
     );
   });
 
