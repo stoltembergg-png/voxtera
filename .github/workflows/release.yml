@@ -127,6 +127,7 @@ jobs:
         run: |
           set -euo pipefail
           test -d "$REPO_DIR/.git"
+          git config --global --add safe.directory "$REPO_DIR"
           git -C "$REPO_DIR" rev-parse --show-toplevel
           git -C "$REPO_DIR" lfs ls-files
           git -C "$REPO_DIR" lfs checkout
