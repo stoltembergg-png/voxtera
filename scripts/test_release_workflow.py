@@ -31,6 +31,8 @@ class ReleaseWorkflowContractTests(unittest.TestCase):
         self.assertIn("runs-on: ubuntu-latest", self.workflow)
         self.assertIn("container: rockylinux:9", self.workflow)
         self.assertIn("dnf install -y git git-lfs gcc gcc-c++ make perl openssl-devel pkg-config curl-minimal tar gzip binutils python3 nodejs", self.workflow)
+        self.assertGreaterEqual(self.workflow.count("working-directory: ${{ github.workspace }}"), 4)
+        self.assertIn("git -C \"$GITHUB_WORKSPACE\" lfs checkout", self.workflow)
         self.assertIn("toolchain: ${{ env.RUST_TOOLCHAIN }}-x86_64-unknown-linux-gnu", self.workflow)
         self.assertIn("cargo build --locked --release --bin veloren-server-cli", self.workflow)
         self.assertIn("ldd --version", self.workflow)
