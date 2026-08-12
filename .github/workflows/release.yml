@@ -126,8 +126,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cd "$REPO_DIR"
-          git lfs checkout
+          test -d "$REPO_DIR/.git"
+          git -C "$REPO_DIR" rev-parse --show-toplevel
+          git -C "$REPO_DIR" lfs ls-files
+          git -C "$REPO_DIR" lfs checkout
       - name: Build Linux server
         run: |
           set -euo pipefail
