@@ -192,6 +192,7 @@ jobs:
           {
             echo "windows_archive=${windows_archive}"
             echo "server_archive=${server_archive}"
+            echo "launcher_asset=VoxteraLauncher.exe"
             echo "manifest=${manifest}"
           } >> "$GITHUB_OUTPUT"
       - name: Create immutable GitHub release
@@ -205,4 +206,5 @@ jobs:
           files: |
             ${{ steps.package.outputs.windows_archive }}
             ${{ steps.package.outputs.server_archive }}
+            ${{ steps.package.outputs.launcher_asset }}
             ${{ steps.package.outputs.manifest }}
