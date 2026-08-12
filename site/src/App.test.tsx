@@ -40,7 +40,7 @@ describe("App", () => {
 
     expect(windowsDownloads).toHaveLength(2);
     windowsDownloads.forEach((action) => {
-      expect(action).toHaveAttribute("href", "/downloads/VoxteraLauncher-windows-v0.4.6.exe");
+      expect(action).toHaveAttribute("href", "/downloads/VoxteraLauncher-windows-v0.4.7.exe");
     });
     expect(screen.queryByRole("link", { name: "Baixar launcher para macOS (.app)" })).not.toBeInTheDocument();
   });
@@ -54,7 +54,7 @@ describe("App", () => {
     );
     expect(screen.getAllByRole("link", { name: "Baixar launcher para Windows (.exe)" })[0]).toHaveAttribute(
       "href",
-      "/downloads/VoxteraLauncher-windows-v0.4.6.exe",
+      "/downloads/VoxteraLauncher-windows-v0.4.7.exe",
     );
   });
 

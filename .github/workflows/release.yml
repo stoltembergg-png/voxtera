@@ -112,17 +112,21 @@ jobs:
           restore-keys: ${{ runner.os }}-server-release-
       - name: Hydrate Git LFS assets
         shell: bash
-        run: git lfs checkout
+        working-directory: ${{ github.workspace }}
+        run: git -C "$GITHUB_WORKSPACE" lfs checkout
       - name: Build Linux server
+        working-directory: ${{ github.workspace }}
         run: cargo build --locked --release --bin veloren-server-cli
       - name: Verify GLIBC 2.34 compatibility
         shell: bash
+        working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
           ldd --version | sed -n '1p'
           python3 scripts/verify_glibc_compatibility.py target/release/veloren-server-cli
       - name: Stage Linux server
         shell: bash
+        working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
           test -x target/release/veloren-server-cli
