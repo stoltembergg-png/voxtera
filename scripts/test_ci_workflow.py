@@ -48,7 +48,7 @@ class CiWorkflowContractTests(unittest.TestCase):
     def test_rust_format_gate_is_scoped_to_changed_rust_files(self) -> None:
         self.assertIn("git diff --diff-filter=ACMR --name-only", self.workflow)
         self.assertIn("rust_files", self.workflow)
-        self.assertIn("rustfmt --check", self.workflow)
+        self.assertIn("rustfmt --edition 2024 --check", self.workflow)
         self.assertNotIn("cargo fmt --all -- --check", self.workflow)
 
 

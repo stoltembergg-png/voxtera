@@ -29,8 +29,24 @@ jobs:
         with:
           toolchain: nightly-2026-06-13
           components: rustfmt
-      - name: Check Rust formatting
-        run: cargo fmt --all -- --check
+      - name: Check changed Rust formatting
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          fi
+          if [ -n "${BASE_SHA:-}" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            git diff --diff-filter=ACMR --name-only "$BASE_SHA" "$GITHUB_SHA" -- '*.rs' > rust_files.txt
+          else
+            git ls-files '*.rs' > rust_files.txt
+          fi
+          if [ ! -s rust_files.txt ]; then
+            echo "No changed Rust files; formatting is not applicable."
+            exit 0
+          fi
+          xargs -r rustfmt --edition 2024 --check < rust_files.txt
 
   rust-server-test:
     name: rust-server-test
