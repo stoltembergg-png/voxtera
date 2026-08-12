@@ -187,8 +187,6 @@ jobs:
             echo "server_archive=${server_archive}"
             echo "manifest=${manifest}"
           } >> "$GITHUB_OUTPUT"
-        env:
-          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
       - name: Create immutable GitHub release
         uses: softprops/action-gh-release@v2
         with:
