@@ -41,6 +41,9 @@ class ReleaseWorkflowContractTests(unittest.TestCase):
         self.assertIn("windows-x64", self.workflow)
         self.assertIn("linux-x86_64", self.workflow)
         self.assertIn("softprops/action-gh-release@v2", self.workflow)
+        self.assertIn("cp artifacts/windows/VoxteraLauncher.exe .", self.workflow)
+        self.assertIn("VoxteraLauncher.exe", self.workflow)
+        self.assertIn("prerelease: false", self.workflow)
 
     def test_release_job_is_the_only_job_with_contents_write(self) -> None:
         self.assertIn("permissions:\n      contents: write", self.workflow)

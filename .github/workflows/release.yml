@@ -200,7 +200,7 @@ jobs:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
           name: Voxtera ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
           generate_release_notes: true
-          prerelease: true
+          prerelease: false
           draft: false
           files: |
             ${{ steps.package.outputs.windows_archive }}
