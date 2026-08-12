@@ -97,6 +97,18 @@ jobs:
         with:
           ref: ${{ inputs.release_tag || github.ref }}
           lfs: true
+      - name: Locate checked out repository
+        id: workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo_dir="$(find /__w /github /home/runner/work /workspace -type d -name .git -prune -print -quit 2>/dev/null | sed 's#/.git$##')"
+          if [ -z "$repo_dir" ]; then
+            repo_dir="$(find /__w /github /home/runner/work /workspace -type f -name .git -print -quit 2>/dev/null | sed 's#/.git$##')"
+          fi
+          test -n "$repo_dir" && test -d "$repo_dir/.git"
+          echo "REPO_DIR=$repo_dir" >> "$GITHUB_ENV"
+          echo "repo_dir=$repo_dir" >> "$GITHUB_OUTPUT"
       - name: Install Rust nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
@@ -112,23 +124,27 @@ jobs:
           restore-keys: ${{ runner.os }}-server-release-
       - name: Hydrate Git LFS assets
         shell: bash
-        working-directory: ${{ github.workspace }}
-        run: git -C "$GITHUB_WORKSPACE" lfs checkout
-      - name: Build Linux server
-        working-directory: ${{ github.workspace }}
-        run: cargo build --locked --release --bin veloren-server-cli
-      - name: Verify GLIBC 2.34 compatibility
-        shell: bash
-        working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
+          cd "$REPO_DIR"
+          git lfs checkout
+      - name: Build Linux server
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
+          cargo build --locked --release --bin veloren-server-cli
+      - name: Verify GLIBC 2.34 compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$REPO_DIR"
           ldd --version | sed -n '1p'
           python3 scripts/verify_glibc_compatibility.py target/release/veloren-server-cli
       - name: Stage Linux server
         shell: bash
-        working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
+          cd "$REPO_DIR"
           test -x target/release/veloren-server-cli
           mkdir -p staging/server/assets
           cp target/release/veloren-server-cli staging/server/
@@ -140,7 +156,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: voxtera-server-linux
-          path: staging/server
+          path: ${{ steps.workspace.outputs.repo_dir }}/staging/server
           if-no-files-found: error
 
   package-and-release:
