@@ -49,7 +49,6 @@ function LauncherDownloads() {
   return (
     <div className="download-actions" aria-label="Downloads do launcher">
       <a className="button button-primary" href={DOWNLOADS.windows}>Baixar launcher para Windows (.exe)</a>
-      <a className="button button-secondary" href={DOWNLOADS.macos}>Baixar launcher para macOS (.app)</a>
     </div>
   );
 }
@@ -73,7 +72,7 @@ export function App() {
             <h1 id="hero-title">Sua aventura começa aqui</h1>
             <p className="hero-copy">Voxtera é um mundo aberto para explorar, construir e transformar cada descoberta em uma história sua.</p>
             <LauncherDownloads />
-            <p className="platform-note">Windows 10/11 · macOS Intel · instalação e atualizações automáticas</p>
+            <p className="platform-note">Windows 10/11 · instalação e atualizações automáticas</p>
           </div>
           <a className="scroll-cue" href="#game">Conheça o mundo <span aria-hidden="true">↓</span></a>
         </section>

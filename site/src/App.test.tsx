@@ -14,11 +14,11 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("states only the verified macOS architecture", () => {
+  it("states only the verified Windows platform", () => {
     render(<App />);
 
     expect(
-      screen.getByText("Windows 10/11 · macOS Intel · instalação e atualizações automáticas"),
+      screen.getByText("Windows 10/11 · instalação e atualizações automáticas"),
     ).toBeInTheDocument();
   });
 
@@ -31,27 +31,21 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Aventure-se" })).toBeInTheDocument();
   });
 
-  it("exposes platform-specific launcher download actions", () => {
+  it("exposes the verified Windows launcher download action", () => {
     render(<App />);
 
     const windowsDownloads = screen.getAllByRole("link", {
-        name: "Baixar launcher para Windows (.exe)",
-    });
-    const macosDownloads = screen.getAllByRole("link", {
-      name: "Baixar launcher para macOS (.app)",
+      name: "Baixar launcher para Windows (.exe)",
     });
 
     expect(windowsDownloads).toHaveLength(2);
     windowsDownloads.forEach((action) => {
       expect(action).toHaveAttribute("href", "/downloads/VoxteraLauncher-windows-v0.4.4.exe");
     });
-    expect(macosDownloads).toHaveLength(2);
-    macosDownloads.forEach((action) => {
-      expect(action).toHaveAttribute("href", "/downloads/VoxteraLauncher-macos-x86_64-v0.4.4.app.zip");
-    });
+    expect(screen.queryByRole("link", { name: "Baixar launcher para macOS (.app)" })).not.toBeInTheDocument();
   });
 
-  it("renders the approved hero artwork with both platform launcher downloads", () => {
+  it("renders the approved hero artwork with the verified Windows launcher download", () => {
     render(<App />);
 
     expect(screen.getByAltText("Vale ensolarado de Voxtera com aventureiro e vila")).toHaveAttribute(
@@ -61,10 +55,6 @@ describe("App", () => {
     expect(screen.getAllByRole("link", { name: "Baixar launcher para Windows (.exe)" })[0]).toHaveAttribute(
       "href",
       "/downloads/VoxteraLauncher-windows-v0.4.4.exe",
-    );
-    expect(screen.getAllByRole("link", { name: "Baixar launcher para macOS (.app)" })[0]).toHaveAttribute(
-      "href",
-      "/downloads/VoxteraLauncher-macos-x86_64-v0.4.4.app.zip",
     );
   });
 
