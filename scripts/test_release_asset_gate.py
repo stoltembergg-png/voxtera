@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import tempfile
+import tarfile
 import unittest
 import zipfile
 
@@ -87,6 +88,50 @@ class ReleaseAssetGateTests(unittest.TestCase):
             validate_archive(archive),
             ["assets/common/canary.canary is a Git LFS pointer"],
         )
+
+    def test_linux_server_archive_requires_binary_assets_and_service_contract(self) -> None:
+        required = required_files_for_archive(Path("voxtera-server-linux-x86_64-v1.0.0.tar.gz"))
+
+        self.assertIn("veloren-server-cli", required)
+        self.assertIn("assets/common/canary.canary", required)
+        self.assertIn("voxtera-server.service", required)
+
+    def test_linux_server_archive_is_rejected_when_service_is_missing(self) -> None:
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        archive = Path(directory.name) / "voxtera-server-linux-x86_64-v1.0.0.tar.gz"
+        with tarfile.open(archive, "w:gz") as bundle:
+            for entry in (
+                "veloren-server-cli",
+                "assets/common/canary.canary",
+                "assets/server/manifests/kits.ron",
+                "assets/world/manifest.ron",
+            ):
+                path = Path(directory.name) / entry
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("fixture", encoding="utf-8")
+                bundle.add(path, arcname=entry)
+
+        self.assertEqual(validate_archive(archive), ["voxtera-server.service"])
+
+    def test_linux_server_archive_with_runtime_contract_is_accepted(self) -> None:
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        archive = Path(directory.name) / "voxtera-server-linux-x86_64-v1.0.0.tar.gz"
+        with tarfile.open(archive, "w:gz") as bundle:
+            for entry in (
+                "veloren-server-cli",
+                "assets/common/canary.canary",
+                "assets/server/manifests/kits.ron",
+                "assets/world/manifest.ron",
+                "voxtera-server.service",
+            ):
+                path = Path(directory.name) / entry
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("fixture", encoding="utf-8")
+                bundle.add(path, arcname=entry)
+
+        self.assertEqual(validate_archive(archive), [])
 
 
 if __name__ == "__main__":
