@@ -29,6 +29,17 @@ use std::{
 
 pub type PersistenceScheduler = SysScheduler<persistence::Sys>;
 
+/// Metrics export is intentionally less frequent than the simulation tick. The
+/// tick timing itself is still recorded every tick by `Server::tick`.
+pub const METRICS_INTERVAL_TICKS: u64 = 10;
+
+/// Returns whether derived Prometheus metrics should be exported for a tick.
+///
+/// Tick zero is included so a newly-started server exports an initial snapshot.
+pub const fn should_run_metrics(tick: u64) -> bool {
+    tick.is_multiple_of(METRICS_INTERVAL_TICKS)
+}
+
 pub fn add_server_systems(dispatch_builder: &mut DispatcherBuilder) {
     dispatch::<melee::Sys>(dispatch_builder, &[&projectile::Sys::sys_name()]);
     //Note: server should not depend on interpolation system
@@ -93,5 +104,23 @@ impl<S> Default for SysScheduler<S> {
             last_run: Instant::now(),
             _phantom: PhantomData,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{METRICS_INTERVAL_TICKS, should_run_metrics};
+
+    #[test]
+    fn metrics_export_runs_on_initial_and_interval_ticks() {
+        assert!(should_run_metrics(0));
+        assert!(should_run_metrics(METRICS_INTERVAL_TICKS));
+        assert!(should_run_metrics(METRICS_INTERVAL_TICKS * 2));
+    }
+
+    #[test]
+    fn metrics_export_skips_ticks_between_intervals() {
+        assert!(!should_run_metrics(1));
+        assert!(!should_run_metrics(METRICS_INTERVAL_TICKS - 1));
     }
 }
