@@ -45,6 +45,9 @@ jobs:
             target
           key: ${{ runner.os }}-release-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-release-
+      - name: Hydrate Git LFS assets
+        shell: bash
+        run: git lfs checkout
       - name: Validate release gates
         run: |
           cargo run -p veloren-client-i18n --features bin --bin i18n_check -- pt-BR
@@ -101,6 +104,9 @@ jobs:
             target
           key: ${{ runner.os }}-server-release-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-server-release-
+      - name: Hydrate Git LFS assets
+        shell: bash
+        run: git lfs checkout
       - name: Build Linux server
         run: cargo build --locked --release --bin veloren-server-cli
       - name: Stage Linux server
@@ -153,8 +159,9 @@ jobs:
           windows_archive="Voxtera-windows-x64-${RELEASE_TAG}.zip"
           server_archive="voxtera-server-linux-x86_64-${RELEASE_TAG}.tar.gz"
           manifest="manifest-${RELEASE_TAG}.json"
-          (cd artifacts/windows && zip -qry "../../${windows_archive}" .)
-          tar -czf "${server_archive}" -C artifacts/server .
+          (cd artifacts/windows && zip -qry "$GITHUB_WORKSPACE/${windows_archive}" Voxtera.exe VoxteraLauncher.exe assets)
+          cp artifacts/windows/VoxteraLauncher.exe .
+          tar -czf "${server_archive}" -C artifacts/server veloren-server-cli assets voxtera-server.service
           python scripts/release_asset_gate.py "${windows_archive}"
           python scripts/release_asset_gate.py "${server_archive}"
           windows_sha256="$(sha256sum "${windows_archive}" | awk '{print $1}')"
