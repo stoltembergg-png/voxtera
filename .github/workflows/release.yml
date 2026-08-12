@@ -2,297 +2,202 @@ name: Release Voxtera
 
 on:
   push:
-    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing v* tag to release (required for manual runs)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Csymbol-mangling-version=v0"
+  RUST_TOOLCHAIN: nightly-2026-06-13
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build-windows:
+  build-windows-client:
+    name: build-windows-client
     runs-on: windows-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+          lfs: true
       - name: Install Rust nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-06-13-x86_64-pc-windows-msvc
-
-      - name: Cache cargo registry and build
+          toolchain: ${{ env.RUST_TOOLCHAIN }}-x86_64-pc-windows-msvc
+      - name: Cache Cargo
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
-
-      - name: Validate pt-BR localization before packaging
-        run: cargo run -p veloren-client-i18n --features bin --bin i18n_check -- pt-BR
-
-      - name: Validate known shader regressions before packaging
-        run: python scripts/shader_regression_gate.py
-
-      - name: Validate Social panel widget IDs before packaging
-        run: python scripts/friends_panel_widget_id_gate.py
-
-      - name: Build release binaries
-        run: cargo build --release --bin Voxtera --bin veloren-server-cli
-
-      - name: Set up Python for the Windows launcher
+          key: ${{ runner.os }}-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-release-
+      - name: Validate release gates
+        run: |
+          cargo run -p veloren-client-i18n --features bin --bin i18n_check -- pt-BR
+          python scripts/shader_regression_gate.py
+          python scripts/friends_panel_widget_id_gate.py
+      - name: Build Windows client
+        run: cargo build --locked --release --bin Voxtera
+      - name: Set up Python for launcher
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-
       - name: Build Windows launcher
         working-directory: launcher
+        shell: pwsh
         run: |
-          python -m pip install --upgrade pip pyinstaller==6.21.0
+          python -m pip install --requirement requirements-build.txt
+          python -m unittest discover -v
           python -m PyInstaller --noconfirm --clean VoxteraLauncher.spec
-
-      - name: Upload Windows release binaries
+          if (-not (Test-Path dist/VoxteraLauncher.exe)) { throw "Windows launcher was not produced" }
+      - name: Stage Windows client
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path staging/windows/assets | Out-Null
+          Copy-Item target/release/Voxtera.exe staging/windows/Voxtera.exe
+          Copy-Item launcher/dist/VoxteraLauncher.exe staging/windows/VoxteraLauncher.exe
+          Copy-Item -Recurse assets/* staging/windows/assets/
+          if (-not (Test-Path staging/windows/assets/common/canary.canary)) { throw "Assets were not hydrated" }
+      - name: Upload Windows client artifact
         uses: actions/upload-artifact@v4
         with:
-          name: voxtera-windows-x64
-          path: |
-            target/release/Voxtera.exe
-            target/release/veloren-server-cli.exe
+          name: voxtera-windows-client
+          path: staging/windows
           if-no-files-found: error
 
-      - name: Upload Windows launcher
-        uses: actions/upload-artifact@v4
-        with:
-          name: voxtera-launcher-windows
-          path: launcher/dist/VoxteraLauncher.exe
-          if-no-files-found: error
-
-  build-macos:
-    name: build-macos-${{ matrix.target }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-15-intel
-            target: x86_64-apple-darwin
-            artifact: voxtera-macos-x86_64
-          - runner: macos-14
-            target: aarch64-apple-darwin
-            artifact: voxtera-macos-aarch64
-    runs-on: ${{ matrix.runner }}
+  build-linux-server:
+    name: build-linux-server
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+          lfs: true
       - name: Install Rust nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-06-13
-          targets: ${{ matrix.target }}
-
-      - name: Cache cargo registry and build
+          toolchain: ${{ env.RUST_TOOLCHAIN }}-x86_64-unknown-linux-gnu
+      - name: Cache Cargo
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-${{ matrix.target }}-cargo-
-
-      - name: Build macOS client binary
-        run: cargo build --release --target ${{ matrix.target }} --bin Voxtera
-
-      - name: Reject Nix-linked macOS binary
+          key: ${{ runner.os }}-server-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-server-release-
+      - name: Build Linux server
+        run: cargo build --locked --release --bin veloren-server-cli
+      - name: Stage Linux server
         shell: bash
         run: |
-          binary="target/${{ matrix.target }}/release/Voxtera"
-          if otool -L "$binary" | grep -q '/nix/store/'; then
-            echo "Refusing to package a client linked to the Nix store."
-            otool -L "$binary"
-            exit 1
-          fi
-
-      - name: Upload macOS client binary
+          set -euo pipefail
+          test -x target/release/veloren-server-cli
+          mkdir -p staging/server/assets
+          cp target/release/veloren-server-cli staging/server/
+          cp -R assets/common staging/server/assets/
+          cp -R assets/server staging/server/assets/
+          cp -R assets/world staging/server/assets/
+          cp deploy/voxtera-server.service staging/server/
+      - name: Upload Linux server artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: target/${{ matrix.target }}/release/Voxtera
-          if-no-files-found: error
-
-  build-launcher-macos:
-    runs-on: macos-15-intel
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up universal Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Verify universal Python runtime
-        shell: bash
-        run: |
-          python_binary="$(python3 -c 'import sys; print(sys.executable)')"
-          lipo -archs "$python_binary" | grep -qw x86_64
-          lipo -archs "$python_binary" | grep -qw arm64
-
-      - name: Build universal macOS launcher
-        working-directory: launcher
-        shell: bash
-        run: |
-          python3 -m pip install --upgrade pip pyinstaller==6.21.0
-          VOXTERA_PYINSTALLER_TARGET_ARCH=universal2 \
-            python3 -m PyInstaller --noconfirm --clean VoxteraLauncher.spec
-          plutil -lint dist/VoxteraLauncher.app/Contents/Info.plist
-          lipo -archs dist/VoxteraLauncher.app/Contents/MacOS/VoxteraLauncher | grep -qw x86_64
-          lipo -archs dist/VoxteraLauncher.app/Contents/MacOS/VoxteraLauncher | grep -qw arm64
-          ditto -c -k --sequesterRsrc --keepParent \
-            dist/VoxteraLauncher.app dist/VoxteraLauncher.app.zip
-
-      - name: Upload universal macOS launcher
-        uses: actions/upload-artifact@v4
-        with:
-          name: voxtera-launcher-macos-universal
-          path: launcher/dist/VoxteraLauncher.app.zip
+          name: voxtera-server-linux
+          path: staging/server
           if-no-files-found: error
 
   package-and-release:
-    needs: [build-windows, build-macos, build-launcher-macos]
-    runs-on: macos-14
+    name: package-and-release
+    needs: [build-windows-client, build-linux-server]
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.release_tag || github.ref }}
           lfs: true
-
-      - name: Download Windows release binaries
+      - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: voxtera-windows-x64
+          name: voxtera-windows-client
           path: artifacts/windows
-
-      - name: Download Intel macOS binary
+      - name: Download Linux server artifact
         uses: actions/download-artifact@v4
         with:
-          name: voxtera-macos-x86_64
-          path: artifacts/macos-x86_64
-
-      - name: Download Apple Silicon macOS binary
-        uses: actions/download-artifact@v4
-        with:
-          name: voxtera-macos-aarch64
-          path: artifacts/macos-aarch64
-
-      - name: Download Windows launcher
-        uses: actions/download-artifact@v4
-        with:
-          name: voxtera-launcher-windows
-          path: artifacts/launcher-windows
-
-      - name: Download universal macOS launcher
-        uses: actions/download-artifact@v4
-        with:
-          name: voxtera-launcher-macos-universal
-          path: artifacts/launcher-macos
-
-      - name: Package Windows ZIP and universal macOS app
+          name: voxtera-server-linux
+          path: artifacts/server
+      - name: Package and hash release artifacts
         id: package
         shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
         run: |
           set -euo pipefail
-          release_tag="build-${GITHUB_RUN_NUMBER}"
-          windows_zip="Voxtera-windows-x64-${release_tag}.zip"
-          macos_zip="Voxtera-macos-universal-${release_tag}.zip"
-          windows_launcher="VoxteraLauncher.exe"
-          macos_launcher="VoxteraLauncher.app.zip"
-          manifest="manifest-${release_tag}.json"
-
-          cp artifacts/launcher-windows/VoxteraLauncher.exe "${windows_launcher}"
-          cp artifacts/launcher-macos/VoxteraLauncher.app.zip "${macos_launcher}"
-
-          mkdir -p stage-windows
-          cp artifacts/windows/Voxtera.exe stage-windows/
-          cp artifacts/windows/veloren-server-cli.exe stage-windows/
-          cp -R assets stage-windows/assets
-          if [ -f settings.ron ]; then cp settings.ron stage-windows/; fi
-          (cd stage-windows && zip -qry "../${windows_zip}" .)
-
-          app="Voxtera.app"
-          mkdir -p "${app}/Contents/MacOS" "${app}/Contents/Resources"
-          lipo -create \
-            artifacts/macos-x86_64/Voxtera \
-            artifacts/macos-aarch64/Voxtera \
-            -output "${app}/Contents/MacOS/Voxtera-bin"
-          lipo -archs "${app}/Contents/MacOS/Voxtera-bin" | grep -qw x86_64
-          lipo -archs "${app}/Contents/MacOS/Voxtera-bin" | grep -qw arm64
-
-          cat > "${app}/Contents/MacOS/Voxtera" <<'EOF'
-          #!/bin/sh
-          set -eu
-          contents_dir="$(cd "$(dirname "$0")/.." && pwd)"
-          export VELOREN_ASSETS="${VELOREN_ASSETS:-$contents_dir/Resources/assets}"
-          exec "$contents_dir/MacOS/Voxtera-bin" "$@"
-          EOF
-          chmod +x "${app}/Contents/MacOS/Voxtera-bin" "${app}/Contents/MacOS/Voxtera"
-
-          cat > "${app}/Contents/Info.plist" <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-            <key>CFBundleDisplayName</key><string>Voxtera</string>
-            <key>CFBundleExecutable</key><string>Voxtera</string>
-            <key>CFBundleIdentifier</key><string>app.voxtera.game</string>
-            <key>CFBundleName</key><string>Voxtera</string>
-            <key>CFBundlePackageType</key><string>APPL</string>
-            <key>CFBundleShortVersionString</key><string>${release_tag}</string>
-            <key>CFBundleVersion</key><string>${GITHUB_RUN_NUMBER}</string>
-            <key>NSHighResolutionCapable</key><true/>
-          </dict></plist>
-          EOF
-          plutil -lint "${app}/Contents/Info.plist"
-          cp -R assets "${app}/Contents/Resources/assets"
-          codesign --force --deep --sign - "${app}"
-          ditto -c -k --sequesterRsrc --keepParent "${app}" "${macos_zip}"
-
-          python3 scripts/release_asset_gate.py "${windows_zip}"
-          python3 scripts/release_asset_gate.py "${macos_zip}"
-
-          windows_sha256="$(shasum -a 256 "${windows_zip}" | awk '{print $1}')"
-          macos_sha256="$(shasum -a 256 "${macos_zip}" | awk '{print $1}')"
-          cat > "${manifest}" <<EOF
-          {"artifacts":{"windows-x64":{"archive":"${windows_zip}","sha256":"${windows_sha256}"},"macos-universal":{"archive":"${macos_zip}","sha256":"${macos_sha256}"}}}
-          EOF
-
+          [[ "$RELEASE_TAG" == v* ]] || { echo "release_tag must start with v"; exit 1; }
+          windows_archive="Voxtera-windows-x64-${RELEASE_TAG}.zip"
+          server_archive="voxtera-server-linux-x86_64-${RELEASE_TAG}.tar.gz"
+          manifest="manifest-${RELEASE_TAG}.json"
+          (cd artifacts/windows && zip -qry "../../${windows_archive}" .)
+          tar -czf "${server_archive}" -C artifacts/server .
+          python scripts/release_asset_gate.py "${windows_archive}"
+          python scripts/release_asset_gate.py "${server_archive}"
+          windows_sha256="$(sha256sum "${windows_archive}" | awk '{print $1}')"
+          server_sha256="$(sha256sum "${server_archive}" | awk '{print $1}')"
+          release_commit="$(git rev-parse HEAD)"
+          export RELEASE_TAG WINDOWS_SHA256="$windows_sha256" SERVER_SHA256="$server_sha256" MANIFEST="$manifest" RELEASE_COMMIT="$release_commit"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          manifest = {
+              "schema": "voxtera-release/v1",
+              "tag": os.environ["RELEASE_TAG"],
+              "commit": os.environ["RELEASE_COMMIT"],
+              "artifacts": {
+                  "windows-x64": {
+                      "archive": f"Voxtera-windows-x64-{os.environ['RELEASE_TAG']}.zip",
+                      "sha256": os.environ["WINDOWS_SHA256"],
+                  },
+                  "linux-x86_64": {
+                      "archive": f"voxtera-server-linux-x86_64-{os.environ['RELEASE_TAG']}.tar.gz",
+                      "sha256": os.environ["SERVER_SHA256"],
+                  },
+              },
+          }
+          Path(os.environ["MANIFEST"]).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          PY
           {
-            echo "release_tag=${release_tag}"
-            echo "windows_zip=${windows_zip}"
-            echo "macos_zip=${macos_zip}"
-            echo "windows_launcher=${windows_launcher}"
-            echo "macos_launcher=${macos_launcher}"
+            echo "windows_archive=${windows_archive}"
+            echo "server_archive=${server_archive}"
             echo "manifest=${manifest}"
           } >> "$GITHUB_OUTPUT"
-
-      - name: Create GitHub release
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+      - name: Create immutable GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.package.outputs.release_tag }}
-          name: Voxtera Build ${{ github.run_number }}
-          body: |
-            Automated release from commit ${{ github.sha }}
-
-            **Packages:**
-            - Windows x64 ZIP: Voxtera.exe, dedicated server, and assets
-            - macOS universal ZIP: Voxtera.app for Intel and Apple Silicon, with assets bundled in Resources
-
-            The macOS app is ad-hoc signed. It is not notarized; the first launch may require Control-click → Open.
-          files: |
-            ${{ steps.package.outputs.windows_zip }}
-            ${{ steps.package.outputs.macos_zip }}
-            ${{ steps.package.outputs.windows_launcher }}
-            ${{ steps.package.outputs.macos_launcher }}
-            ${{ steps.package.outputs.manifest }}
-          draft: false
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+          name: Voxtera ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+          generate_release_notes: true
           prerelease: true
+          draft: false
+          files: |
+            ${{ steps.package.outputs.windows_archive }}
+            ${{ steps.package.outputs.server_archive }}
+            ${{ steps.package.outputs.manifest }}

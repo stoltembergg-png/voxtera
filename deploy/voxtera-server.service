@@ -1,0 +1,22 @@
+[Unit]
+Description=Voxtera dedicated game server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=voxtera
+Group=voxtera
+WorkingDirectory=/opt/voxtera/current
+Environment=VELOREN_USERDATA=/var/lib/voxtera/userdata
+Environment=VELOREN_ASSETS=/opt/voxtera/current/assets
+Environment=RUST_LOG=info,common::net=info
+ExecStart=/opt/voxtera/current/veloren-server-cli --non-interactive
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGUSR1
+TimeoutStopSec=150
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
