@@ -120,6 +120,9 @@ jobs:
       - name: Validate release workflow contract
         working-directory: scripts
         run: python -m unittest test_release_workflow -v
+      - name: Validate GLIBC compatibility gate
+        working-directory: scripts
+        run: python -m unittest test_verify_glibc_compatibility -v
       - name: Validate quality gate evaluator
         working-directory: scripts
         run: python -m unittest test_quality_gate -v
