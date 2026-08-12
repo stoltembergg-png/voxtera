@@ -86,7 +86,13 @@ jobs:
     name: build-linux-server
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    container: rockylinux:9
     steps:
+      - name: Install Linux build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          dnf install -y git git-lfs gcc gcc-c++ make perl openssl-devel pkg-config curl tar gzip binutils python3 nodejs
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.release_tag || github.ref }}
@@ -109,6 +115,12 @@ jobs:
         run: git lfs checkout
       - name: Build Linux server
         run: cargo build --locked --release --bin veloren-server-cli
+      - name: Verify GLIBC 2.34 compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          ldd --version | sed -n '1p'
+          python3 scripts/verify_glibc_compatibility.py target/release/veloren-server-cli
       - name: Stage Linux server
         shell: bash
         run: |
@@ -167,7 +179,7 @@ jobs:
           windows_sha256="$(sha256sum "${windows_archive}" | awk '{print $1}')"
           server_sha256="$(sha256sum "${server_archive}" | awk '{print $1}')"
           release_commit="$(git rev-parse HEAD)"
-          export RELEASE_TAG WINDOWS_SHA256="$windows_sha256" SERVER_SHA256="$server_sha256" MANIFEST="$manifest" RELEASE_COMMIT="$release_commit"
+          export RELEASE_TAG WINDOWS_SHA256="$windows_sha256" SERVER_SHA256="$server_sha256" MANIFEST="$manifest" RELEASE_COMMIT="$release_commit" GLIBC_MAX_VERSION="2.34"
           python - <<'PY'
           import json
           import os
@@ -184,6 +196,7 @@ jobs:
                   "linux-x86_64": {
                       "archive": f"voxtera-server-linux-x86_64-{os.environ['RELEASE_TAG']}.tar.gz",
                       "sha256": os.environ["SERVER_SHA256"],
+                      "glibc_max": os.environ["GLIBC_MAX_VERSION"],
                   },
               },
           }
