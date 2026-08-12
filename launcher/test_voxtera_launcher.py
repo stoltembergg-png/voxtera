@@ -19,6 +19,7 @@ import certifi
 
 import voxtera_launcher as launcher
 from voxtera_launcher import (
+    GITHUB_REPO,
     find_platform_archive,
     game_launch_environment,
     installed_game_path,
@@ -28,6 +29,9 @@ from voxtera_launcher import (
 
 
 class UserConfigurationTests(unittest.TestCase):
+    def test_launcher_uses_the_fork_release_repository(self) -> None:
+        self.assertEqual(GITHUB_REPO, "stoltembergg-png/voxtera")
+
     def test_macos_uses_user_writable_config_and_install_directories(self) -> None:
         """A distributed .app must never write configuration or game files inside
         its own bundle, because Gatekeeper/App Translocation can make it read-only."""
@@ -205,11 +209,14 @@ class PlayActionTests(unittest.TestCase):
             spec = platform_spec("Darwin")
             exe = install_dir / "Voxtera.app" / "Contents" / "MacOS" / "Voxtera"
             bin_ = install_dir / "Voxtera.app" / "Contents" / "MacOS" / "Voxtera-bin"
+            # Before the fix: files extracted from ZIP may not be executable on POSIX.
+            # Windows has no POSIX execute-bit semantics, so only assert the files exist.
             if os.name != "nt":
                 self.assertFalse(os.access(exe, os.X_OK))
                 self.assertFalse(os.access(bin_, os.X_OK))
             # Apply the fix
             launcher._fix_extracted_executable_permissions(str(install_dir), spec)
+            # After the fix: both must be executable where the platform exposes +x.
             if os.name != "nt":
                 self.assertTrue(os.access(exe, os.X_OK))
                 self.assertTrue(os.access(bin_, os.X_OK))

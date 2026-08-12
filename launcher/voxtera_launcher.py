@@ -34,10 +34,10 @@ def get_base_dir():
 BASE_DIR = get_base_dir()
 
 # ── Constants ──────────────────────────────────────────────────────────────────
-GITHUB_REPO = "Stoltemberg/voxtera"
+GITHUB_REPO = "stoltembergg-png/voxtera"
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases"
 APP_NAME = "Voxtera"
-LAUNCHER_VERSION = "0.4.3"
+LAUNCHER_VERSION = "0.4.4"
 
 
 def _user_home(home=None):

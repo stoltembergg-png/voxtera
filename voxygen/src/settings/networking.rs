@@ -21,8 +21,8 @@ impl Default for NetworkingSettings {
     fn default() -> Self {
         Self {
             username: "".to_string(),
-            servers: vec!["54.147.28.131:14004".to_string()],
-            default_server: "54.147.28.131:14004".to_string(),
+            servers: vec!["ec2-15-229-9-223.sa-east-1.compute.amazonaws.com:14004".to_string()],
+            default_server: "ec2-15-229-9-223.sa-east-1.compute.amazonaws.com:14004".to_string(),
             trusted_auth_servers: ["https://gcfavlnisyhdwseuvzpd.supabase.co"]
                 .iter()
                 .map(|s| s.to_string())
@@ -34,5 +34,22 @@ impl Default for NetworkingSettings {
             lossy_terrain_compression: false,
             enable_discord_integration: true,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::NetworkingSettings;
+
+    #[test]
+    fn default_server_points_to_the_current_voxtera_vps() {
+        let settings = NetworkingSettings::default();
+
+        assert_eq!(
+            settings.default_server,
+            "ec2-15-229-9-223.sa-east-1.compute.amazonaws.com:14004"
+        );
+        assert_eq!(settings.servers, vec![settings.default_server.clone()]);
+        assert!(!settings.use_srv);
     }
 }

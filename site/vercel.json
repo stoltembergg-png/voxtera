@@ -3,28 +3,23 @@
   "outputDirectory": "dist",
   "redirects": [
     {
-      "source": "/downloads/VoxteraLauncher-windows-v0.4.0.exe",
-      "destination": "https://github.com/Stoltemberg/voxtera/releases/download/v0.4.0/VoxteraLauncher.exe",
+      "source": "/downloads/VoxteraLauncher-windows-v0.4.4.exe",
+      "destination": "https://github.com/stoltembergg-png/voxtera/releases/download/launcher-v0.4.4/VoxteraLauncher.exe",
       "permanent": false
     },
     {
-      "source": "/downloads/VoxteraLauncher-macos-x86_64-v0.4.3.app.zip",
-      "destination": "https://github.com/Stoltemberg/voxtera/releases/download/launcher-v0.4.3/VoxteraLauncher-macos-x86_64-v0.4.3.app.zip",
-      "permanent": false
-    },
-    {
-      "source": "/downloads/VoxteraLauncher-macos-x86_64-v0.4.1.app.zip",
-      "destination": "https://github.com/Stoltemberg/voxtera/releases/download/launcher-v0.4.1/VoxteraLauncher-macos-x86_64-v0.4.1.app.zip",
+      "source": "/downloads/VoxteraLauncher-macos-x86_64-v0.4.4.app.zip",
+      "destination": "https://github.com/stoltembergg-png/voxtera/releases/download/launcher-v0.4.4/VoxteraLauncher-macos-x86_64-v0.4.4.app.zip",
       "permanent": false
     },
     {
       "source": "/downloads/VoxteraLauncher.exe",
-      "destination": "https://github.com/Stoltemberg/voxtera/releases/download/v0.4.0/VoxteraLauncher.exe",
+      "destination": "https://github.com/stoltembergg-png/voxtera/releases/download/launcher-v0.4.4/VoxteraLauncher.exe",
       "permanent": false
     },
     {
       "source": "/downloads/VoxteraLauncher.app.zip",
-      "destination": "https://github.com/Stoltemberg/voxtera/releases/download/launcher-v0.4.3/VoxteraLauncher-macos-x86_64-v0.4.3.app.zip",
+      "destination": "https://github.com/stoltembergg-png/voxtera/releases/download/launcher-v0.4.4/VoxteraLauncher-macos-x86_64-v0.4.4.app.zip",
       "permanent": false
     }
   ]
