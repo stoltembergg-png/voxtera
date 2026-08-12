@@ -33,6 +33,7 @@ class ReleaseWorkflowContractTests(unittest.TestCase):
         self.assertIn("dnf install -y git git-lfs gcc gcc-c++ make perl openssl-devel pkg-config curl-minimal tar gzip binutils python3 nodejs", self.workflow)
         self.assertIn("repo_dir=\"$(find /__w /github /home/runner/work /workspace -type d -name .git -prune -print -quit 2>/dev/null | sed 's#/.git$##')\"", self.workflow)
         self.assertIn("test -n \"$repo_dir\" && test -d \"$repo_dir/.git\"", self.workflow)
+        self.assertIn("git config --global --add safe.directory \"$REPO_DIR\"", self.workflow)
         self.assertIn("git -C \"$REPO_DIR\" rev-parse --show-toplevel", self.workflow)
         self.assertIn("git -C \"$REPO_DIR\" lfs checkout", self.workflow)
         self.assertIn("git -C \"$REPO_DIR\" lfs ls-files", self.workflow)
