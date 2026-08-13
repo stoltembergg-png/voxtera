@@ -49,6 +49,14 @@ class CiWorkflowContractTests(unittest.TestCase):
         self.assertIn("git cat-file -e", self.workflow)
         self.assertIn("Base commit unavailable; checking all tracked Rust files fail-closed.", self.workflow)
 
+    def test_rust_format_gate_resolves_pull_request_base_from_fetch_head(self) -> None:
+        self.assertIn("BASE_COMMIT=$(git rev-parse FETCH_HEAD)", self.workflow)
+        self.assertIn("git diff --diff-filter=ACMR --name-only \"$BASE_COMMIT\" \"$GITHUB_SHA\"", self.workflow)
+
+    def test_rust_format_gate_fails_closed_when_pull_request_base_is_unavailable(self) -> None:
+        self.assertIn('echo "Pull request base commit unavailable; refusing to format the full repository."', self.workflow)
+        self.assertIn("exit 1", self.workflow)
+
 
 if __name__ == "__main__":
     unittest.main()

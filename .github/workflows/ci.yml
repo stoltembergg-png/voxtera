@@ -36,10 +36,17 @@ jobs:
           set -euo pipefail
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
             git fetch --no-tags --depth=1 origin "$BASE_SHA"
+            BASE_COMMIT=$(git rev-parse FETCH_HEAD)
+            if [ "$BASE_COMMIT" != "$BASE_SHA" ] || ! git cat-file -e "$BASE_COMMIT^{commit}" 2>/dev/null; then
+              echo "Pull request base commit unavailable; refusing to format the full repository."
+              exit 1
+            fi
           elif [ -n "${BASE_SHA:-}" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
             git fetch --no-tags --depth=1 origin "$BASE_SHA" || true
           fi
-          if [ -n "${BASE_SHA:-}" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            git diff --diff-filter=ACMR --name-only "$BASE_COMMIT" "$GITHUB_SHA" -- '*.rs' ':(exclude)vendor/**' > rust_files.txt
+          elif [ -n "${BASE_SHA:-}" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
             git diff --diff-filter=ACMR --name-only "$BASE_SHA" "$GITHUB_SHA" -- '*.rs' ':(exclude)vendor/**' > rust_files.txt
           else
             echo "Base commit unavailable; checking all tracked Rust files fail-closed."
