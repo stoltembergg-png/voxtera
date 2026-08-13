@@ -196,6 +196,8 @@ jobs:
           manifest="manifest-${RELEASE_TAG}.json"
           (cd artifacts/windows && zip -qry "$GITHUB_WORKSPACE/${windows_archive}" Voxtera.exe VoxteraLauncher.exe assets)
           cp artifacts/windows/VoxteraLauncher.exe .
+          chmod +x artifacts/server/veloren-server-cli
+          test -x artifacts/server/veloren-server-cli
           tar -czf "${server_archive}" -C artifacts/server veloren-server-cli assets voxtera-server.service
           python scripts/release_asset_gate.py "${windows_archive}"
           python scripts/release_asset_gate.py "${server_archive}"

@@ -72,6 +72,8 @@ def validate_archive(archive: Path) -> list[str]:
                         errors.append(f"{path} is a Git LFS pointer")
         elif isinstance(bundle, tarfile.TarFile):
             for member in bundle.getmembers():
+                if member.name == "veloren-server-cli" and (not member.isfile() or not member.mode & 0o111):
+                    errors.append("veloren-server-cli is not executable")
                 if member.isfile() and member.name.startswith("assets/"):
                     payload = bundle.extractfile(member)
                     if payload is not None and payload.read(256).startswith(GIT_LFS_POINTER_PREFIX):
