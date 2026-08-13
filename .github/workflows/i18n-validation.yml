@@ -22,12 +22,15 @@ jobs:
     name: Fluent parser and pt-BR integrity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Rust nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-06-13-x86_64-pc-windows-msvc
+          toolchain: nightly-2026-06-13
 
       - name: Parse and validate pt-BR localization
+        env:
+          # This focused job does not need the repository's optional mold linker.
+          RUSTFLAGS: "-Csymbol-mangling-version=v0"
         run: cargo run -p veloren-client-i18n --features bin --bin i18n_check -- pt-BR

@@ -57,7 +57,7 @@ class ReleaseWorkflowContractTests(unittest.TestCase):
         self.assertIn("manifest=", self.workflow)
         self.assertIn("windows-x64", self.workflow)
         self.assertIn("linux-x86_64", self.workflow)
-        self.assertIn("softprops/action-gh-release@v2", self.workflow)
+        self.assertIn("softprops/action-gh-release@v3", self.workflow)
         self.assertIn("cp artifacts/windows/VoxteraLauncher.exe .", self.workflow)
         self.assertIn("launcher_asset=VoxteraLauncher.exe", self.workflow)
         self.assertIn("steps.package.outputs.launcher_asset", self.workflow)
