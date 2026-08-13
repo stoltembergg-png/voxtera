@@ -300,7 +300,7 @@ fn calendar_refresh_due(last_refresh: Instant, now: Instant) -> bool {
 
 #[cfg(test)]
 mod calendar_refresh_tests {
-    use super::{calendar_refresh_due, CALENDAR_REFRESH_INTERVAL};
+    use super::{CALENDAR_REFRESH_INTERVAL, calendar_refresh_due};
     use std::time::Instant;
 
     #[test]
