@@ -18,6 +18,9 @@ pub struct Client {
     pub last_ping: f64,
     pub login_msg_sent: AtomicBool,
     pub locale: Option<String>,
+    /// Chunk center whose minimum server-side terrain radius was fully loaded.
+    /// `None` means the radius must be checked before the next simulation tick.
+    minimum_loaded_chunk: Option<vek::Vec2<i32>>,
 
     //TODO: Consider splitting each of these out into their own components so all the message
     //processing systems can run in parallel with each other (though it may turn out not to
@@ -74,6 +77,7 @@ impl Client {
             last_ping,
             locale,
             login_msg_sent: AtomicBool::new(false),
+            minimum_loaded_chunk: None,
             general_stream,
             ping_stream,
             register_stream,
@@ -90,6 +94,18 @@ impl Client {
     }
 
     pub(crate) fn connected_from_addr(&self) -> &ConnectAddr { &self.connected_from_addr }
+
+    pub(crate) fn minimum_loaded_chunk(&self) -> Option<vek::Vec2<i32>> {
+        self.minimum_loaded_chunk
+    }
+
+    pub(crate) fn set_minimum_loaded_chunk(&mut self, chunk: vek::Vec2<i32>) {
+        self.minimum_loaded_chunk = Some(chunk);
+    }
+
+    pub(crate) fn clear_minimum_loaded_chunk(&mut self) {
+        self.minimum_loaded_chunk = None;
+    }
 
     pub(crate) fn send<M: Into<ServerMsg>>(&self, msg: M) -> Result<(), StreamError> {
         // TODO: hack to avoid locking stream mutex while serializing the message,

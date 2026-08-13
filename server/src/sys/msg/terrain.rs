@@ -14,6 +14,11 @@ use common_net::msg::{ClientGeneral, ServerGeneral};
 use rayon::prelude::*;
 use specs::{Entities, Join, LendJoin, Read, ReadExpect, ReadStorage, Write, WriteStorage};
 use tracing::{debug, trace};
+use vek::Vec2;
+
+fn minimum_radius_is_cached(cached_chunk: Option<Vec2<i32>>, current_chunk: Vec2<i32>) -> bool {
+    cached_chunk == Some(current_chunk)
+}
 
 /// This system will handle new messages from clients
 #[derive(Default)]
@@ -153,5 +158,19 @@ impl<'a> System<'a> for Sys {
         job.cpu_stats.measure(ParMode::Single);
 
         chunk_requests.append(&mut new_chunk_requests);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::minimum_radius_is_cached;
+    use vek::Vec2;
+
+    #[test]
+    fn minimum_radius_cache_requires_same_chunk() {
+        let chunk = Vec2::new(4, -2);
+        assert!(minimum_radius_is_cached(Some(chunk), chunk));
+        assert!(!minimum_radius_is_cached(None, chunk));
+        assert!(!minimum_radius_is_cached(Some(Vec2::new(5, -2)), chunk));
     }
 }

@@ -1367,6 +1367,14 @@ impl Server {
 
     /// Clean up the server after a tick.
     pub fn cleanup(&mut self) {
+        if !self.state.terrain_changes().removed_chunks.is_empty() {
+            let entities = self.state.ecs().entities();
+            let mut clients = self.state.ecs().write_storage::<Client>();
+            for (_, client) in (&entities, &mut clients).join() {
+                client.clear_minimum_loaded_chunk();
+            }
+        }
+
         // Cleanup the local state
         self.state.cleanup();
 
