@@ -1,0 +1,49 @@
+version: 2
+
+updates:
+  # Dependências Rust / Cargo
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Sao_Paulo"
+
+    open-pull-requests-limit: 10
+
+    labels:
+      - "dependencies"
+      - "rust"
+
+    commit-message:
+      prefix: "deps"
+
+    groups:
+      cargo-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions usadas nos workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:30"
+      timezone: "America/Sao_Paulo"
+
+    open-pull-requests-limit: 10
+
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+    commit-message:
+      prefix: "ci"
+
+    groups:
+      github-actions:
+        patterns:
+          - "*"
