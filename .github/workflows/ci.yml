@@ -56,7 +56,7 @@ jobs:
             echo "No changed Rust files; formatting is not applicable."
             exit 0
           fi
-          xargs -r rustfmt --edition 2024 --check < rust_files.txt
+          xargs -r rustfmt --edition 2024 --config skip_children=true --check < rust_files.txt
 
   rust-server-test:
     name: rust-server-test

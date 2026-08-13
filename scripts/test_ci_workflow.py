@@ -57,6 +57,9 @@ class CiWorkflowContractTests(unittest.TestCase):
         self.assertIn('echo "Pull request base commit unavailable; refusing to format the full repository."', self.workflow)
         self.assertIn("exit 1", self.workflow)
 
+    def test_rust_format_gate_does_not_reformat_unchanged_child_modules(self) -> None:
+        self.assertIn("rustfmt --edition 2024 --config skip_children=true --check", self.workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
