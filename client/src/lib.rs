@@ -3655,8 +3655,9 @@ mod tests {
 
         let runtime = Arc::new(Runtime::new().unwrap());
         let runtime2 = Arc::clone(&runtime);
-        let username = "Foo";
-        let password = "Bar";
+        // This API compatibility probe must never contain credential material.
+        let username = String::new();
+        let password = String::new();
         let auth_server = "gcfavlnisyhdwseuvzpd.supabase.co";
         let veloren_client: Result<Client, Error> = runtime.block_on(Client::new(
             ConnectionArgs::Tcp {
@@ -3665,8 +3666,8 @@ mod tests {
             },
             runtime2,
             &mut None,
-            username,
-            password,
+            &username,
+            &password,
             None,
             |suggestion: &str| suggestion == auth_server,
             &|_| {},

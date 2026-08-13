@@ -72,9 +72,27 @@ pub struct LoginProvider {
     runtime: Arc<Runtime>,
     auth_server: Option<Arc<AuthClient>>,
     supabase: Option<SupabaseConfig>,
+    supabase_config_error: Option<String>,
 }
 
 impl LoginProvider {
+    fn load_supabase_config() -> Result<SupabaseConfig, String> {
+        let required_env = |name: &str| {
+            std::env::var(name)
+                .ok()
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| format!("missing required Supabase configuration: {name}"))
+        };
+
+        let kid = required_env("SUPABASE_KID")?;
+        let x = required_env("SUPABASE_KEY_X")?;
+        let y = required_env("SUPABASE_KEY_Y")?;
+        let decoding_key = jsonwebtoken::DecodingKey::from_ec_components(&x, &y)
+            .map_err(|_| "invalid Supabase EC public key configuration".to_string())?;
+
+        Ok(SupabaseConfig { decoding_key, kid })
+    }
+
     pub fn new(auth_addr: Option<String>, runtime: Arc<Runtime>) -> Self {
         tracing::trace!(?auth_addr, "Starting LoginProvider");
 
@@ -94,40 +112,36 @@ impl LoginProvider {
             })
         };
 
-        // For Supabase, load the EC public key
-        let supabase = if is_supabase {
-            // Try to fetch JWKS from Supabase discovery URL, or use hardcoded key
-            let kid = std::env::var("SUPABASE_KID")
-                .unwrap_or_else(|_| "866e8b5f-73ce-40be-a21c-ac8bd470985c".to_string());
-
-            // Try EC parameters from environment or use defaults
-            let x = std::env::var("SUPABASE_KEY_X")
-                .unwrap_or_else(|_| "xsSDqnNJtZYDDTRIA_3-sV0daRsYdr_SkqHOgRt5k8Y".to_string());
-            let y = std::env::var("SUPABASE_KEY_Y")
-                .unwrap_or_else(|_| "qZILJ0XyA3V9bsX130y8raNZ-WXzCkqnjar852kpg7Q".to_string());
-
-            let decoding_key = jsonwebtoken::DecodingKey::from_ec_components(
-                &x,
-                &y,
-            ).expect("Failed to create EC decoding key from Supabase public key");
-
-            info!("Supabase auth configured with ES256 public key");
-            Some(SupabaseConfig { decoding_key, kid })
+        // For Supabase, load the EC public key exclusively from the environment.
+        let (supabase, supabase_config_error) = if is_supabase {
+            match Self::load_supabase_config() {
+                Ok(config) => {
+                    info!("Supabase auth configured with ES256 public key");
+                    (Some(config), None)
+                },
+                Err(error) => {
+                    error!(%error, "Supabase authentication is unavailable");
+                    (None, Some(error))
+                },
+            }
         } else {
-            None
+            (None, None)
         };
 
         Self {
             runtime,
             auth_server,
             supabase,
+            supabase_config_error,
         }
     }
 
     pub fn verify(&self, username_or_token: &str) -> PendingLogin {
         let (pending_s, pending_r) = oneshot::channel();
 
-        if let Some(supabase_config) = &self.supabase {
+        if let Some(error) = &self.supabase_config_error {
+            let _ = pending_s.send(Err(RegisterError::AuthError(error.clone())));
+        } else if let Some(supabase_config) = &self.supabase {
             // Supabase JWT validation (ES256)
             let token = username_or_token.to_string();
             let decoding_key = &supabase_config.decoding_key;
