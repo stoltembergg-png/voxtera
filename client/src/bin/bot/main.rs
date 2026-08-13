@@ -189,7 +189,7 @@ impl BotClient {
                         &mut None,
                         Some((&cred.username, &cred.password)),
                     )
-                        .expect("Failed to connect to server")
+                    .expect("Failed to connect to server")
                 });
 
             let body = BotClient::create_default_body();

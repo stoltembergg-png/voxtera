@@ -60,8 +60,8 @@ use common_i18n::Content;
 use common_net::{
     msg::{
         AdminAction, ChatTypeContext, ClientGeneral, ClientMsg, ClientRegister, DisconnectReason,
-        FriendAction, FriendInfo, InviteAnswer, Notification, PingMsg, PlayerInfo, PlayerListUpdate,
-        RegisterError, ServerGeneral, ServerInit, ServerRegisterAnswer,
+        FriendAction, FriendInfo, InviteAnswer, Notification, PingMsg, PlayerInfo,
+        PlayerListUpdate, RegisterError, ServerGeneral, ServerInit, ServerRegisterAnswer,
         server::ServerDescription,
         world_msg::{EconomyInfo, PoiInfo, SiteId},
     },
@@ -1158,7 +1158,9 @@ impl Client {
                                 if let Some(token) = response.access_token {
                                     Ok(token)
                                 } else {
-                                    Err(Error::AuthErr("No access token in Supabase response".to_string()))
+                                    Err(Error::AuthErr(
+                                        "No access token in Supabase response".to_string(),
+                                    ))
                                 }
                             },
                             Err(e) => Err(Error::AuthErr(format!("Supabase auth failed: {}", e))),
@@ -2950,9 +2952,10 @@ impl Client {
                         {
                             // Localised: the message content travels as a Fluent key and is
                             // resolved by the client in its own selected language.
-                            frontend_events.push(Event::Chat(comp::ChatType::Meta.into_msg(
-                                Content::localized("hud-chat-meta-group-join-hint"),
-                            )));
+                            frontend_events
+                                .push(Event::Chat(comp::ChatType::Meta.into_msg(
+                                    Content::localized("hud-chat-meta-group-join-hint"),
+                                )));
                         }
                         if let Some(player_info) = self.player_list.get(&uid) {
                             #[expect(deprecated, reason = "i18n alias")]
@@ -2960,13 +2963,10 @@ impl Client {
                                 self.personalize_alias(uid, player_info.player_alias.clone());
                             frontend_events.push(Event::Chat(
                                 comp::ChatType::GroupMeta("Group".into()).into_msg(
-                                    Content::localized_with_args(
-                                        "hud-chat-meta-group-joined",
-                                        [(
-                                            "alias",
-                                            common_i18n::LocalizationArg::from(alias),
-                                        )],
-                                    ),
+                                    Content::localized_with_args("hud-chat-meta-group-joined", [(
+                                        "alias",
+                                        common_i18n::LocalizationArg::from(alias),
+                                    )]),
                                 ),
                             ));
                         }
@@ -2985,13 +2985,10 @@ impl Client {
                                 self.personalize_alias(uid, player_info.player_alias.clone());
                             frontend_events.push(Event::Chat(
                                 comp::ChatType::GroupMeta("Group".into()).into_msg(
-                                    Content::localized_with_args(
-                                        "hud-chat-meta-group-left",
-                                        [(
-                                            "alias",
-                                            common_i18n::LocalizationArg::from(alias),
-                                        )],
-                                    ),
+                                    Content::localized_with_args("hud-chat-meta-group-left", [(
+                                        "alias",
+                                        common_i18n::LocalizationArg::from(alias),
+                                    )]),
                                 ),
                             ));
                             frontend_events.push(Event::MapMarker(

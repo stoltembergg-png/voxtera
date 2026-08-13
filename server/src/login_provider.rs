@@ -106,8 +106,12 @@ impl LoginProvider {
         } else {
             auth_addr.map(|addr| {
                 let (scheme, authority) = addr.split_once("://").expect("invalid auth url");
-                let scheme = scheme.parse::<authc::Scheme>().expect("invalid auth url scheme");
-                let authority = authority.parse::<authc::Authority>().expect("invalid auth url authority");
+                let scheme = scheme
+                    .parse::<authc::Scheme>()
+                    .expect("invalid auth url scheme");
+                let authority = authority
+                    .parse::<authc::Authority>()
+                    .expect("invalid auth url authority");
                 Arc::new(AuthClient::new(scheme, authority).expect("insecure auth scheme"))
             })
         };
@@ -180,8 +184,8 @@ impl LoginProvider {
         validation.set_audience(&["authenticated"]);
         validation.validate_exp = true;
 
-        let token_data = decode::<SupabaseClaims>(token, decoding_key, &validation)
-            .map_err(|e| {
+        let token_data =
+            decode::<SupabaseClaims>(token, decoding_key, &validation).map_err(|e| {
                 error!(?e, "Supabase token validation failed");
                 RegisterError::AuthError(format!("Invalid token: {}", e))
             })?;
@@ -224,20 +228,28 @@ impl LoginProvider {
             Ok(Err(e)) => Some(Err(e)),
             Ok(Ok((username, uuid))) => {
                 let now = Utc::now();
-                let ip = client.connected_from_addr().socket_addr()
+                let ip = client
+                    .connected_from_addr()
+                    .socket_addr()
                     .map(|s| s.ip())
                     .map(NormalizedIpAddr::from);
                 let admin = admins.get(&uuid);
-                if let Some(ban) = banlist.uuid_bans().get(&uuid)
+                if let Some(ban) = banlist
+                    .uuid_bans()
+                    .get(&uuid)
                     .and_then(|ban_entry| ban_entry.current.action.ban())
                     .into_iter()
                     .chain(ip.and_then(|ip| {
-                        banlist.ip_bans().get(&ip)
+                        banlist
+                            .ip_bans()
+                            .get(&ip)
                             .and_then(|ban_entry| ban_entry.current.action.ban())
                     }))
                     .find(|ban| ban_applies(ban, admin, now))
                 {
-                    if let Some(ip) = ip && ban.upgrade_to_ip {
+                    if let Some(ip) = ip
+                        && ban.upgrade_to_ip
+                    {
                         make_ip_ban_upgrade(ip, uuid, username.clone());
                     }
                     return Some(Err(RegisterError::Banned(ban.info())));
@@ -253,7 +265,9 @@ impl LoginProvider {
             },
             Err(oneshot::error::TryRecvError::Closed) => {
                 error!("channel got closed too early");
-                Some(Err(RegisterError::AuthError("Internal Error verifying".to_string())))
+                Some(Err(RegisterError::AuthError(
+                    "Internal Error verifying".to_string(),
+                )))
             },
             Err(oneshot::error::TryRecvError::Empty) => None,
         }
@@ -271,7 +285,9 @@ impl LoginProvider {
             let username = srv.uuid_to_username(uuid).await?;
             let r: Result<_, AuthClientError> = Ok((username, uuid));
             r
-        }.await {
+        }
+        .await
+        {
             Err(e) => Err(RegisterError::AuthError(e.to_string())),
             Ok((username, uuid)) => Ok((username, uuid)),
         }
@@ -284,7 +300,11 @@ impl LoginProvider {
         }
     }
 
-    pub fn uuid_to_username(&self, uuid: Uuid, fallback_alias: &str) -> Result<String, AuthClientError> {
+    pub fn uuid_to_username(
+        &self,
+        uuid: Uuid,
+        fallback_alias: &str,
+    ) -> Result<String, AuthClientError> {
         match &self.auth_server {
             Some(srv) => self.runtime.block_on(srv.uuid_to_username(uuid)),
             None => Ok(fallback_alias.into()),
