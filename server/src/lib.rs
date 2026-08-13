@@ -295,9 +295,8 @@ pub struct Server {
 const CALENDAR_REFRESH_INTERVAL: Duration = Duration::from_secs(60);
 
 fn calendar_refresh_due(last_refresh: Option<Instant>, now: Instant) -> bool {
-    last_refresh.is_none_or(|last_refresh| {
-        now.duration_since(last_refresh) >= CALENDAR_REFRESH_INTERVAL
-    })
+    last_refresh
+        .is_none_or(|last_refresh| now.duration_since(last_refresh) >= CALENDAR_REFRESH_INTERVAL)
 }
 
 #[cfg(test)]
@@ -877,7 +876,7 @@ impl Server {
                 .calendar_mode
                 .calendar_now();
             *self.state.ecs_mut().write_resource::<Calendar>() = new_calendar;
-            self.calendar_last_refresh = now;
+            self.calendar_last_refresh = Some(now);
         }
 
         #[cfg(feature = "hot-site")]
