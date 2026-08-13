@@ -77,7 +77,7 @@ slotmap = { workspace = true }
 
 rusqlite = { workspace = true }
 refinery = { version = "0.9", features = ["rusqlite"] }
-jsonwebtoken = "9"
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 reqwest = { version = "0.12", features = ["json"] }
 
 schnellru = "0.2.1"

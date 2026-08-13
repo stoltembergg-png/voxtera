@@ -129,6 +129,9 @@ jobs:
       - name: Validate credential security contract
         working-directory: scripts
         run: python -m unittest test_security_credentials -v
+      - name: Validate dependency security contract
+        working-directory: scripts
+        run: python -m unittest test_dependency_security -v
 
   quality-gate:
     name: CI / Quality Gate
