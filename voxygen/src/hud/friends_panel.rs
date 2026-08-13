@@ -281,12 +281,9 @@ impl Widget for FriendsPanel<'_> {
             // selected tab. The tint is ACCENT (gold) so it stands out from the
             // dark background and the grey inactive tabs.
             if state.tab == *tab {
-                Rectangle::fill_with(
-                    [90.0, 2.0],
-                    color::rgba(1.0, 0.85, 0.3, 0.85),
-                )
-                .top_left_with_margins_on(state.ids.tabs[i], 30.0, 0.0)
-                .set(state.ids.tab_underlines[i], ui);
+                Rectangle::fill_with([90.0, 2.0], color::rgba(1.0, 0.85, 0.3, 0.85))
+                    .top_left_with_margins_on(state.ids.tabs[i], 30.0, 0.0)
+                    .set(state.ids.tab_underlines[i], ui);
             }
         }
 
@@ -898,66 +895,66 @@ impl Widget for FriendsPanel<'_> {
             .set(state.ids.summary, ui);
 
         if state.tab == SocialTab::Group
-                    && self
-                        .client
-                        .invite()
-                        .is_some_and(|(_, _, _, kind)| matches!(kind, InviteKind::Group))
-                {
-                    // Show a short prompt above the invitee list so the player
-                    // knows who sent the invitation and what the buttons are for.
-                    if let Some((uid, _, _, kind)) = self
-                        .client
-                        .invite()
-                        .filter(|(_, _, _, kind)| matches!(kind, InviteKind::Group))
-                    {
-                        let inviter_alias = self
-                            .client
-                            .player_list()
-                            .get(&uid)
-                            .map(|info| info.player_alias.as_str())
-                            .unwrap_or_else(|| "???");
-                        use i18n::{FluentArgs, FluentValue};
-                        let mut args = FluentArgs::new();
-                        args.set("name", FluentValue::from(inviter_alias));
-                        let prompt = self
-                            .i18n
-                            .get_msg_ctx("hud-friends-group-invite-open", &args);
-                        Text::new(&prompt)
-                            .bottom_right_with_margins_on(state.ids.frame, 5.0, 124.0)
-                            .font_id(self.fonts.cyri.conrod_id)
-                            .font_size(self.fonts.cyri.scale(12))
-                            .color(TEXT_COLOR)
-                            .set(state.ids.group_invitee_prompt, ui);
-                    }
-                    if Button::image(self.imgs.button)
-                        .hover_image(self.imgs.button_hover)
-                        .press_image(self.imgs.button_press)
-                        .w_h(76.0, 24.0)
-                        .label(&self.i18n.get_msg("hud-friends-accept"))
-                        .label_font_id(self.fonts.cyri.conrod_id)
-                        .label_font_size(self.fonts.cyri.scale(11))
-                        .label_color(TEXT_COLOR)
-                        .bottom_right_with_margins_on(state.ids.frame, 12.0, 98.0)
-                        .set(state.ids.group_invite_accept, ui)
-                        .was_clicked()
-                    {
-                        events.push(Event::AcceptGroupInvite);
-                    }
-                    if Button::image(self.imgs.button)
-                        .hover_image(self.imgs.button_hover)
-                        .press_image(self.imgs.button_press)
-                        .w_h(76.0, 24.0)
-                        .label(&self.i18n.get_msg("hud-friends-reject"))
-                        .label_font_id(self.fonts.cyri.conrod_id)
-                        .label_font_size(self.fonts.cyri.scale(11))
-                        .label_color(TEXT_COLOR)
-                        .bottom_right_with_margins_on(state.ids.frame, 12.0, 18.0)
-                        .set(state.ids.group_invite_decline, ui)
-                        .was_clicked()
-                    {
-                        events.push(Event::DeclineGroupInvite);
-                    }
-                }
+            && self
+                .client
+                .invite()
+                .is_some_and(|(_, _, _, kind)| matches!(kind, InviteKind::Group))
+        {
+            // Show a short prompt above the invitee list so the player
+            // knows who sent the invitation and what the buttons are for.
+            if let Some((uid, _, _, kind)) = self
+                .client
+                .invite()
+                .filter(|(_, _, _, kind)| matches!(kind, InviteKind::Group))
+            {
+                let inviter_alias = self
+                    .client
+                    .player_list()
+                    .get(&uid)
+                    .map(|info| info.player_alias.as_str())
+                    .unwrap_or_else(|| "???");
+                use i18n::{FluentArgs, FluentValue};
+                let mut args = FluentArgs::new();
+                args.set("name", FluentValue::from(inviter_alias));
+                let prompt = self
+                    .i18n
+                    .get_msg_ctx("hud-friends-group-invite-open", &args);
+                Text::new(&prompt)
+                    .bottom_right_with_margins_on(state.ids.frame, 5.0, 124.0)
+                    .font_id(self.fonts.cyri.conrod_id)
+                    .font_size(self.fonts.cyri.scale(12))
+                    .color(TEXT_COLOR)
+                    .set(state.ids.group_invitee_prompt, ui);
+            }
+            if Button::image(self.imgs.button)
+                .hover_image(self.imgs.button_hover)
+                .press_image(self.imgs.button_press)
+                .w_h(76.0, 24.0)
+                .label(&self.i18n.get_msg("hud-friends-accept"))
+                .label_font_id(self.fonts.cyri.conrod_id)
+                .label_font_size(self.fonts.cyri.scale(11))
+                .label_color(TEXT_COLOR)
+                .bottom_right_with_margins_on(state.ids.frame, 12.0, 98.0)
+                .set(state.ids.group_invite_accept, ui)
+                .was_clicked()
+            {
+                events.push(Event::AcceptGroupInvite);
+            }
+            if Button::image(self.imgs.button)
+                .hover_image(self.imgs.button_hover)
+                .press_image(self.imgs.button_press)
+                .w_h(76.0, 24.0)
+                .label(&self.i18n.get_msg("hud-friends-reject"))
+                .label_font_id(self.fonts.cyri.conrod_id)
+                .label_font_size(self.fonts.cyri.scale(11))
+                .label_color(TEXT_COLOR)
+                .bottom_right_with_margins_on(state.ids.frame, 12.0, 18.0)
+                .set(state.ids.group_invite_decline, ui)
+                .was_clicked()
+            {
+                events.push(Event::DeclineGroupInvite);
+            }
+        }
 
         if self
             .global_state

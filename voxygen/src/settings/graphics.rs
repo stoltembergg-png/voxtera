@@ -56,15 +56,15 @@ impl Default for GraphicsSettings {
     fn default() -> Self {
         Self {
             terrain_view_distance: 10,
-            entity_view_distance: client::MAX_SELECTABLE_VIEW_DISTANCE,  // Voxtera: Keep max entity view distance
+            entity_view_distance: client::MAX_SELECTABLE_VIEW_DISTANCE, /* Voxtera: Keep max entity view distance */
             lod_distance: 200,
             sprite_render_distance: 100,
             particles_enabled: true,
             weapon_trails_enabled: true,
-            figure_lod_render_distance: 350,  // Voxtera: Increased figure LOD distance
+            figure_lod_render_distance: 350, // Voxtera: Increased figure LOD distance
             max_fps: Fps::Max(60),
             max_background_fps: Fps::Max(30),
-            fov: 75,  // Voxtera: Slightly wider field of view
+            fov: 75, // Voxtera: Slightly wider field of view
             gamma: 1.1,
             exposure: 1.1,
             ambiance: 0.6,

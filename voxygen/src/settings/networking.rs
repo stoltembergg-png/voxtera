@@ -88,13 +88,10 @@ mod tests {
 
         assert!(settings.migrate_legacy_server_addresses());
         assert_eq!(settings.default_server, super::DEFAULT_SERVER_ADDRESS);
-        assert_eq!(
-            settings.servers,
-            vec![
-                super::DEFAULT_SERVER_ADDRESS.to_string(),
-                super::DEFAULT_SERVER_ADDRESS.to_string(),
-            ]
-        );
+        assert_eq!(settings.servers, vec![
+            super::DEFAULT_SERVER_ADDRESS.to_string(),
+            super::DEFAULT_SERVER_ADDRESS.to_string(),
+        ]);
         assert!(!settings.migrate_legacy_server_addresses());
     }
 }
