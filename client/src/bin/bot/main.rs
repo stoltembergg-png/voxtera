@@ -56,9 +56,9 @@ pub fn make_client(
     runtime: &Arc<Runtime>,
     server: &str,
     server_info: &mut Option<ServerInfo>,
-    username: &str,
-    password: &str,
+    credentials: Option<(&str, &str)>,
 ) -> Option<Client> {
+    let (username, password) = credentials.unwrap_or_default();
     let runtime_clone = Arc::clone(runtime);
     let addr = ConnectionArgs::Tcp {
         prefer_ipv6: false,
@@ -86,7 +86,7 @@ impl BotClient {
         let runtime = Arc::new(Runtime::new().unwrap());
         let mut server_info = None;
         // Don't care if we connect, just trying to grab the server info.
-        let _ = make_client(&runtime, &settings.server, &mut server_info, "", "");
+        let _ = make_client(&runtime, &settings.server, &mut server_info, None);
         let server_info = server_info.expect("Failed to connect to server.");
         let clock = Clock::new(Duration::from_secs_f64(1.0 / 60.0));
         BotClient {
@@ -183,8 +183,13 @@ impl BotClient {
                 .bot_clients
                 .entry(cred.username.clone())
                 .or_insert_with(|| {
-                    make_client(&runtime, server, &mut None, &cred.username, &cred.password)
-                        .expect("Failed to connect to server")
+                    make_client(
+                        &runtime,
+                        server,
+                        &mut None,
+                        Some((&cred.username, &cred.password)),
+                    )
+                    .expect("Failed to connect to server")
                 });
 
             let body = BotClient::create_default_body();

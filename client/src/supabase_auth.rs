@@ -81,14 +81,10 @@ pub struct SupabaseAuthClient {
 }
 
 impl SupabaseAuthClient {
-    pub fn new(config: SupabaseConfig) -> Self {
-        Self { config }
-    }
+    pub fn new(config: SupabaseConfig) -> Self { Self { config } }
 
     /// Create client with default Voxtera config
-    pub fn voxtera() -> Self {
-        Self::new(SupabaseConfig::voxtera())
-    }
+    pub fn voxtera() -> Self { Self::new(SupabaseConfig::voxtera()) }
 
     /// Sign up a new user with email, password and username
     pub fn sign_up(
@@ -118,11 +114,7 @@ impl SupabaseAuthClient {
     }
 
     /// Sign in an existing user with email and password
-    pub fn sign_in(
-        &self,
-        email: &str,
-        password: &str,
-    ) -> Result<AuthResponse, SupabaseAuthError> {
+    pub fn sign_in(&self, email: &str, password: &str) -> Result<AuthResponse, SupabaseAuthError> {
         let url = format!(
             "{}/auth/v1/token?grant_type=password",
             self.config.project_url
@@ -143,10 +135,7 @@ impl SupabaseAuthClient {
         self.handle_response(response)
     }
 
-    fn handle_response(
-        &self,
-        response: ureq::Response,
-    ) -> Result<AuthResponse, SupabaseAuthError> {
+    fn handle_response(&self, response: ureq::Response) -> Result<AuthResponse, SupabaseAuthError> {
         let status = response.status();
 
         let body_str = response
