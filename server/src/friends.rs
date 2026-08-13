@@ -483,20 +483,15 @@ impl FriendsResource {
             friend_lists: self.friend_lists.clone(),
             aliases: self.aliases.clone(),
         };
-        let ron_str = match ron::ser::to_string_pretty(
-            &data,
-            ron::ser::PrettyConfig::default(),
-        ) {
+        let ron_str = match ron::ser::to_string_pretty(&data, ron::ser::PrettyConfig::default()) {
             Ok(s) => s,
             Err(e) => {
                 warn!(?e, "Failed to serialize friends data");
                 return;
             },
         };
-        let atomic_file = atomicwrites::AtomicFile::new(
-            path,
-            atomicwrites::OverwriteBehavior::AllowOverwrite,
-        );
+        let atomic_file =
+            atomicwrites::AtomicFile::new(path, atomicwrites::OverwriteBehavior::AllowOverwrite);
         if let Err(e) = atomic_file.write(|file| {
             use std::io::Write;
             file.write_all(ron_str.as_bytes())
@@ -523,10 +518,7 @@ impl FriendsResource {
         };
         match ron::from_str::<SerializableFriends>(&contents) {
             Ok(data) => {
-                info!(
-                    players = data.friend_lists.len(),
-                    "Loaded friends.ron"
-                );
+                info!(players = data.friend_lists.len(), "Loaded friends.ron");
                 Self {
                     friend_lists: data.friend_lists,
                     aliases: data.aliases,
