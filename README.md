@@ -1,124 +1,179 @@
 <!-- SPDX-SnippetBegin -->
-<!-- SPDX-SnippetCopyrightText: 2025 Hrom -->
-<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
-# ![Veloren logo on a screenshot](https://s3.eu-central-2.wasabisys.com/veloren-blog/cdn/common/2025-06-29_Hrom_bestest-banner.webp)
-<!-- SPDX-SnippetEnd -->
+<!-- SPDX-SnippetCopyrightText: 2026 Voxtera Contributors -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 
-[![discord](https://img.shields.io/discord/449602562165833758?logo=discord&logoColor=%23f8f8f8&label=discord&color=%23788dd5)](https://veloren.net/discord)
-[![zulip](https://img.shields.io/badge/zulip-join_chat-dodgerblue.svg?logo=zulip)](https://veloren.net/zulip)
-[![pipeline status](https://gitlab.com/veloren/veloren/badges/master/pipeline.svg)](https://gitlab.com/veloren/veloren/-/pipelines)
-[![coverage report](https://gitlab.com/veloren/veloren/badges/master/coverage.svg)](https://gitlab.com/veloren/veloren/-/graphs/master/charts)
-[![translation status](https://translate.codeberg.org/widgets/veloren/-/svg-badge.svg)](https://translate.codeberg.org/engage/veloren/)
-[![dependency status](https://deps.rs/repo/gitlab/veloren/veloren/status.svg)](https://deps.rs/repo/gitlab/veloren/veloren)
-[![code contributor count](https://img.shields.io/gitlab/contributors/veloren%2Fveloren?label=code%20contributors&color=darkgreen)](https://gitlab.com/veloren/veloren/-/graphs/master)
-[![financial contributor count](https://img.shields.io/opencollective/all/veloren?label=financial%20contributors&color=darkgreen)](https://opencollective.com/veloren)
+<div align="center">
 
-<a href="https://veloren.net/donate" target="_blank">
-  <img src="https://opencollective.com/veloren/contribute/button@2x.png?color=blue" width="29%" alt="Donate to the Veloren project on Open Collective">
-</a>
+<img src="site/public/images/voxtera-logo.png" alt="Voxtera Logo" width="240" />
 
-## Welcome to Veloren!
+# **Voxtera**
 
-Veloren is an action-adventure RPG game set in a vast fantasy world. It is inspired by other games such as Cube World, The Legend of Zelda: Breath of the Wild, Dwarf Fortress and Minecraft.
+*An open-source, procedural voxel action-adventure RPG built in Rust.*
 
-Veloren is in active development and enjoys a flourishing player community.
+[![License: GPL v3](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+[![Rust Edition](https://img.shields.io/badge/Rust-2024_Edition-orange.svg?logo=rust)](https://www.rust-lang.org/)
+[![Website](https://img.shields.io/badge/Website-voxtera.vercel.app-black?style=flat&logo=vercel)](https://voxtera.vercel.app)
+[![Version](https://img.shields.io/badge/Version-0.18.0--dev-brightgreen)](Cargo.toml)
+[![Platforms](https://img.shields.io/badge/Platforms-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](#-play-voxtera)
 
-## Development
+<br/>
 
-You are welcome to join either our [Discord server](https://veloren.net/discord) or our [Zulip server](https://veloren.net/zulip) to chat with the community.
+<img src="site/public/images/voxtera-clean-hero.png" alt="Voxtera Hero Banner" width="100%" />
 
-We accept many types of contributions, not only from software developers!
-For example, players who submit their feedback and artists who share their artworks with the community.
+</div>
 
-Translators are also welcome to contribute on our Weblate instance.
+---
 
-<a href="https://translate.codeberg.org/engage/veloren/">
-  <img src="https://translate.codeberg.org/widgets/veloren/-/open-graph.png" alt="Translation status on Weblate" width="55%">
-</a>
+## 🌌 Overview
 
-## Useful links
+**Voxtera** is a vast, open-world voxel action-adventure RPG set in a procedurally generated fantasy universe. Inspired by iconic titles like *Cube World*, *The Legend of Zelda: Breath of the Wild*, *Dwarf Fortress*, and *Minecraft*, Voxtera blends high-performance engine engineering with rich, atmospheric exploration and player-driven creation.
 
-[Sign up](https://veloren.net/account) -
-Create an account to play on most Veloren multiplayer servers.
+- 🌍 **Procedural Voxel World**: Explore infinite biomes, sweeping mountain ranges, ancient ruins, and perilous dungeons.
+- ⚔️ **Action Combat & RPG Systems**: Real-time action combat, stamina management, weapon skill trees, and magic abilities.
+- ⚙️ **Custom Engine Core**: Built ground-up in **Rust** leveraging `wgpu` for high-performance cross-platform graphics, custom shader pipelines, and temporal optimizations.
+- 🌐 **Multiplayer Engine**: Integrated dedicated server architecture powered by Quinn (QUIC), real-time NPC simulation (`rtsim`), and Supabase authentication.
+- 🆓 **100% Free & Open Source**: Licensed under GNU GPL v3.0 — free to play, host, customize, and build upon forever.
 
-<details>
-  <summary>Click here for more details about authentication</summary>
-  The official authentication server uses TLS encryption extensively.
-  It also employs salted hashing to ensure your login credentials are stored securely.
-  Additionally, the server neither tracks any metrics nor uses data for any purpose other than providing the authentication service.
-</details>
+---
 
-[The wiki](https://wiki.veloren.net) -
-Information repository about the game made by and for players.
+## ✨ Features & Gameplay
 
-[The book](https://book.veloren.net) -
-Supplementary information useful both for players and contributors.
+<div align="center">
 
-[Future plans](https://gitlab.com/veloren/veloren/-/milestones) -
-Development roadmap and issue tracker.
+| 🌲 **Explore** | 🔨 **Build** |
+| :---: | :---: |
+| <img src="site/public/images/mountain-valley.jpg" alt="Explore Mountain Valley" width="450" /> | <img src="site/public/images/voxtera-build-village.png" alt="Build Voxel Village" width="450" /> |
+| Traverse lush valleys, frozen peaks, and ancient ruins across endless procedural terrains. | Construct settlements, fortresses, and homes block by block with your friends. |
 
-[Code of conduct](https://veloren.net/code-of-conduct) -
-Policies our moderators enforce to ensure a healthy and safe environment for everyone in the community.
+<br/>
 
-### Official social media and websites
+| ⚔️ **Adventure** | 🎮 **In-Game Experience** |
+| :---: | :---: |
+| <img src="site/public/images/ruins-adventure.jpg" alt="Combat in Volcanic Ruins" width="450" /> | <img src="site/public/images/gameplay-capture.png" alt="Voxtera Gameplay Capture" width="450" /> |
+| Battle monsters, uncover hidden lore, and conquer dungeon challenges. | Smooth action RPG mechanics with real-time dynamic lighting and shaders. |
 
-[![Website](https://img.shields.io/badge/Website-000?style=for-the-badge&logo=internetarchive&logoColor=white)](https://veloren.net)
-<br>
-[![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://veloren.net/discord)
-<br>
-[![Zulip](https://img.shields.io/badge/-zulip-darkblue?style=for-the-badge&logo=zulip)](https://veloren.net/zulip)
-<br>
-[![Mastodon](https://img.shields.io/badge/Mastodon-6364FF?style=for-the-badge&logo=mastodon&logoColor=white)](https://floss.social/@veloren)
-<br>
-[![Reddit](https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white)](https://www.reddit.com/r/Veloren)
-<br>
-[![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/veloren)
-<br>
-[![Twitch](https://img.shields.io/badge/Twitch-9146FF?style=for-the-badge&logo=twitch&logoColor=white)](https://www.twitch.tv/veloren_dev)
+</div>
 
-## Get Veloren
+---
 
-We provide builds for Windows, macOS and Linux.
-The game can be downloaded on our website:
+## 🚀 Play Voxtera
 
-<https://veloren.net/download>
+### Official Web Portal & Downloads
 
-Due to rapid game development, stable versions become outdated fast
-and might be **incompatible with the public server**.
+Visit our official web portal to download the game, launcher, and view live status:
 
-It is recommended to use [Airshipper](https://book.veloren.net/players/airshipper.html),
-the official game launcher, to keep your game up-to-date easily.
+👉 **[https://voxtera.vercel.app](https://voxtera.vercel.app)**
 
-If you prefer to compile the game yourself, follow the instructions
-in our [book](https://book.veloren.net/contributors/introduction.html).
+### 📦 Game Launcher (`VoxteraLauncher`)
 
-## FAQ
+We recommend using the official **Voxtera Launcher** for Windows and macOS. The launcher handles automatic client updates, patch delivery, and seamless server connecting.
 
-### **Q:** How is this game licensed?
+<div align="center">
 
-**A:** **It is free to play, modify and distribute. Forever.**
-Since it is a community project, we decided to license it under the **[GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0-standalone.html)**,
-which means it will always stay free and open source.
+| Step | Visual | Description |
+| :---: | :---: | :--- |
+| **01. Download** | <img src="site/public/images/voxtera-step-chest.png" width="64" alt="Chest" /> | Grab the latest launcher build for your platform. |
+| **02. Install** | <img src="site/public/images/voxtera-step-portal.png" width="64" alt="Portal" /> | Launcher automatically configures the game files and updates. |
+| **03. Play** | <img src="site/public/images/voxtera-step-sword-shield.png" width="64" alt="Sword and Shield" /> | Launch Voxtera and step into your procedural adventure. |
 
-### **Q:** What platforms are supported?
+</div>
 
-**A:** Veloren can run on Windows, macOS and Linux on a great range of CPU architectures.
-However, the x86_64 architecture is the main focus in development.
-Official builds for the ARM64 architecture are also provided for macOS and Linux.
-It is likely possible to compile the game on other platforms as well.
+<br/>
 
-### **Q:** Do you accept donations?
+| Platform | Download Link | Requirements / Notes |
+| :--- | :--- | :--- |
+| 🪟 **Windows** | [Download VoxteraLauncher.exe](https://voxtera.vercel.app/downloads/VoxteraLauncher.exe) | Windows 10/11 (64-bit standalone GUI) |
+| 🍎 **macOS** | [Download macOS Bundle](https://voxtera.vercel.app) | Universal binary (Intel & Apple Silicon) |
+| 🐧 **Linux** | Source Build | Compile via Cargo (see instructions below) |
 
-**A:** You can support the project financially on our [Open Collective](https://opencollective.com/veloren) page.
+---
 
-## Credit
+## 🛠️ Workspace Architecture
 
-Our Weblate project is hosted by [Codeberg](https://codeberg.org/).
+Voxtera is developed as a modular Cargo workspace in Rust:
 
-Many thanks to:
+```
+voxtera/
+├── voxygen/       # Game client GUI & rendering engine (wgpu, shaders, input, animation)
+├── server/        # Dedicated game server engine & tick loop
+├── server-cli/    # CLI management & administrative interface for server hosters
+├── client/        # Client-side network protocol, auth integration & entity state
+├── common/        # Shared ECS components, assets pipeline, physics, and game state
+├── world/         # Procedural voxel world generator, climate, biomes & dungeons
+├── rtsim/         # Real-time world simulation (NPC behaviors, economic paths, travel)
+├── network/       # Low-latency networking layer built on Quinn / QUIC
+└── site/          # Modern showcase web portal (Vite + React deployed on Vercel)
+```
 
-- Software developers who have contributed to the source code repository, hunted bugs and created tools for the game.
-- Artists who have crafted game art, composed music and provided voxel models.
-- Translators who have localized the game to several languages.
-- People who have provided ideas and feedback for the game.
-- Overall, our awesome community who makes this project possible.
+---
+
+## 💻 Building from Source
+
+### Prerequisites
+
+To build Voxtera locally, ensure your environment includes:
+
+- **Rust Toolchain**: 2024 edition (`rustup update`)
+- **C/C++ Compiler & CMake**: Required for native dependencies (`gcc`, `clang`, or MSVC)
+- **Graphics API Support**: Vulkan, DirectX 12, or Metal compliant graphics drivers
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/stoltembergg-png/voxtera.git
+cd voxtera
+```
+
+### 2. Run the Game Client
+
+```bash
+cargo run --release --bin Voxtera
+```
+
+*(Note: Omit `--release` for faster compilation during rapid development, though release mode delivers optimal worldgen and rendering frame rates).*
+
+### 3. Run a Local Dedicated Server
+
+```bash
+cargo run --release --package veloren-server-cli
+```
+
+### 4. Run the Web Portal (`site/`)
+
+```bash
+cd site
+npm install
+npm run dev
+```
+
+---
+
+## ❓ FAQ & Licensing
+
+### Is Voxtera free to play?
+**Yes!** Voxtera is 100% free and open-source under the [GNU General Public License v3.0](LICENSE). You can host private servers, create custom mods, inspect the source code, and distribute modifications freely.
+
+### What platforms are supported?
+Voxtera natively supports **Windows**, **Linux**, and **macOS** (`x86_64` and `ARM64` / Apple Silicon).
+
+---
+
+## 🤝 Contributing & Community
+
+We welcome contributions from developers, voxel artists, audio creators, translators, and players!
+
+- 🦀 **Rust Core & Engine**: Explore open issues and pull requests on GitHub.
+- 🎨 **Voxel Assets & Models**: Create and submit voxel artwork made with MagicaVoxel or Veloren Voxel Editor.
+- 🌐 **Localization / Translations**: Translate in-game UI and dialogs in `assets/voxygen/i18n/`.
+
+---
+
+<div align="center">
+
+<img src="site/public/images/voxtera-closing-valley.png" alt="Voxtera Closing Valley Banner" width="100%" />
+
+### *Your journey begins block by block.*
+
+**[Website](https://voxtera.vercel.app)** • **[Documentation](docs/)** • **[Contributing](CONTRIBUTING.md)** • **[License](LICENSE)**
+
+</div>
