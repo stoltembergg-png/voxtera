@@ -6,7 +6,6 @@
 
 <img src="site/public/images/voxtera-logo.png" alt="Voxtera Logo" width="240" />
 
-# Voxtera
 
 *An open-source, procedural voxel action-adventure RPG built in Rust.*
 
