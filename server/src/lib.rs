@@ -1293,8 +1293,12 @@ impl Server {
 
         let end_of_server_tick = Instant::now();
 
-        // 8) Update Metrics
-        run_now::<sys::metrics::Sys>(self.state.ecs());
+        // 8) Update derived metrics at a lower frequency than the simulation tick.
+        // The tick timing below is still recorded every tick.
+        let tick_count = self.state.ecs().read_resource::<Tick>().0;
+        if sys::should_run_metrics(tick_count) {
+            run_now::<sys::metrics::Sys>(self.state.ecs());
+        }
 
         {
             // Report timing info
