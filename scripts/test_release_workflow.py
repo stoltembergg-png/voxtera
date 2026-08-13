@@ -52,6 +52,8 @@ class ReleaseWorkflowContractTests(unittest.TestCase):
         self.assertIn("needs: [build-windows-client, build-linux-server]", self.workflow)
         self.assertIn("windows_archive=", self.workflow)
         self.assertIn("server_archive=", self.workflow)
+        self.assertIn("chmod +x artifacts/server/veloren-server-cli", self.workflow)
+        self.assertIn("test -x artifacts/server/veloren-server-cli", self.workflow)
         self.assertIn("manifest=", self.workflow)
         self.assertIn("windows-x64", self.workflow)
         self.assertIn("linux-x86_64", self.workflow)

@@ -37,7 +37,7 @@ BASE_DIR = get_base_dir()
 GITHUB_REPO = "stoltembergg-png/voxtera"
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases"
 APP_NAME = "Voxtera"
-LAUNCHER_VERSION = "0.4.10"
+LAUNCHER_VERSION = "0.4.11"
 
 
 def _user_home(home=None):
