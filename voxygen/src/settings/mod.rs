@@ -98,6 +98,7 @@ impl Settings {
 
         let mut settings = common::util::ron_from_path_recoverable::<Self>(&path);
         settings.chat.migrate_party_chat_tab();
+        settings.networking.migrate_legacy_server_addresses();
         // Save settings to add new fields or create the file if it is not already there
         settings.save_to_file_warn(config_dir);
         settings

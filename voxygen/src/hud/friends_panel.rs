@@ -84,6 +84,7 @@ widget_ids! {
         title,
         title_align,
         tabs[],
+        tab_underlines[],
         search_bg,
         search_input,
         search_icon,
@@ -233,8 +234,12 @@ impl Widget for FriendsPanel<'_> {
             .color(TEXT_COLOR)
             .set(state.ids.title, ui);
 
-        if state.ids.tabs.len() < 4 {
-            state.update(|s| s.ids.tabs.resize(4, &mut ui.widget_id_generator()));
+        if state.ids.tabs.len() < 4 || state.ids.tab_underlines.len() < 4 {
+            state.update(|s| {
+                let generator = &mut ui.widget_id_generator();
+                s.ids.tabs.resize(4, generator);
+                s.ids.tab_underlines.resize(4, generator);
+            });
         }
         let tab_data = [
             (
@@ -281,7 +286,7 @@ impl Widget for FriendsPanel<'_> {
                     color::rgba(1.0, 0.85, 0.3, 0.85),
                 )
                 .top_left_with_margins_on(state.ids.tabs[i], 30.0, 0.0)
-                .set(state.ids.tabs[i], ui);
+                .set(state.ids.tab_underlines[i], ui);
             }
         }
 

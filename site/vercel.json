@@ -3,13 +3,13 @@
   "outputDirectory": "dist",
   "redirects": [
     {
-      "source": "/downloads/VoxteraLauncher-windows-v0.4.11.exe",
-      "destination": "https://github.com/stoltembergg-png/voxtera/releases/download/v0.4.11/VoxteraLauncher.exe",
+      "source": "/downloads/VoxteraLauncher-windows-v0.4.12.exe",
+      "destination": "https://github.com/stoltembergg-png/voxtera/releases/download/v0.4.12/VoxteraLauncher.exe",
       "permanent": false
     },
     {
       "source": "/downloads/VoxteraLauncher.exe",
-      "destination": "https://github.com/stoltembergg-png/voxtera/releases/download/v0.4.11/VoxteraLauncher.exe",
+      "destination": "https://github.com/stoltembergg-png/voxtera/releases/download/v0.4.12/VoxteraLauncher.exe",
       "permanent": false
     }
   ]
