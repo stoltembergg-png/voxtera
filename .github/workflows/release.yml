@@ -28,16 +28,16 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.release_tag || github.ref }}
           lfs: true
       - name: Install Rust nightly toolchain
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@7c8d7d138f5c09cef361f8214cf96882cd029cdb # nightly
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}-x86_64-pc-windows-msvc
       - name: Cache Cargo
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cargo/registry
@@ -56,7 +56,7 @@ jobs:
       - name: Build Windows client
         run: cargo build --locked --release --bin Voxtera
       - name: Set up Python for launcher
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.13"
       - name: Build Windows launcher
@@ -76,7 +76,7 @@ jobs:
           Copy-Item -Recurse assets/* staging/windows/assets/
           if (-not (Test-Path staging/windows/assets/common/canary.canary)) { throw "Assets were not hydrated" }
       - name: Upload Windows client artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: voxtera-windows-client
           path: staging/windows
@@ -93,7 +93,7 @@ jobs:
         run: |
           set -euo pipefail
           dnf install -y git git-lfs gcc gcc-c++ make perl openssl-devel pkg-config curl-minimal tar gzip binutils python3 nodejs
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.release_tag || github.ref }}
           lfs: true
@@ -110,11 +110,11 @@ jobs:
           echo "REPO_DIR=$repo_dir" >> "$GITHUB_ENV"
           echo "repo_dir=$repo_dir" >> "$GITHUB_OUTPUT"
       - name: Install Rust nightly toolchain
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@7c8d7d138f5c09cef361f8214cf96882cd029cdb # nightly
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}-x86_64-unknown-linux-gnu
       - name: Cache Cargo
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cargo/registry
@@ -156,7 +156,7 @@ jobs:
           cp -R assets/world staging/server/assets/
           cp deploy/voxtera-server.service staging/server/
       - name: Upload Linux server artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: voxtera-server-linux
           path: ${{ steps.workspace.outputs.repo_dir }}/staging/server
@@ -169,17 +169,17 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.release_tag || github.ref }}
           lfs: true
       - name: Download Windows artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: voxtera-windows-client
           path: artifacts/windows
       - name: Download Linux server artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: voxtera-server-linux
           path: artifacts/server
@@ -234,7 +234,7 @@ jobs:
             echo "manifest=${manifest}"
           } >> "$GITHUB_OUTPUT"
       - name: Create immutable GitHub release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
           name: Voxtera ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}

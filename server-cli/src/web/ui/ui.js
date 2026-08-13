@@ -22,7 +22,7 @@ function openTab(evt, cityName) {
 function changeSlider(evt, sliderId, showId) {
     var slider = document.getElementById(sliderId);
     var sliderNo = document.getElementById(showId);
-    sliderNo.innerHTML = slider.value;
+    sliderNo.textContent = slider.value;
 }
 
 async function sendGlobalMsg() {
