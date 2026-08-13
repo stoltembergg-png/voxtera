@@ -178,6 +178,42 @@ pub const MIN_VD: u32 = 6;
 #[derive(Copy, Clone, Default)]
 pub struct Tick(u64);
 
+/// Advances spawn protection and reports whether the component should remain.
+/// Expired protection is removed in the same tick instead of being left at
+/// zero until a second full-entity cleanup scan.
+fn next_spawn_protection_remaining(
+    remaining: Duration,
+    dt: Duration,
+) -> Option<Duration> {
+    remaining.checked_sub(dt).filter(|next| !next.is_zero())
+}
+
+#[cfg(test)]
+mod spawn_protection_tests {
+    use super::next_spawn_protection_remaining;
+    use std::time::Duration;
+
+    #[test]
+    fn expires_when_delta_reaches_remaining_duration() {
+        assert_eq!(
+            next_spawn_protection_remaining(Duration::from_secs(2), Duration::from_secs(2)),
+            None
+        );
+        assert_eq!(
+            next_spawn_protection_remaining(Duration::from_secs(1), Duration::from_secs(2)),
+            None
+        );
+    }
+
+    #[test]
+    fn retains_positive_remaining_duration() {
+        assert_eq!(
+            next_spawn_protection_remaining(Duration::from_secs(3), Duration::from_secs(1)),
+            Some(Duration::from_secs(2))
+        );
+    }
+}
+
 #[derive(Clone)]
 pub struct HwStats {
     hardware_threads: u32,
@@ -1276,19 +1312,18 @@ impl Server {
 
         // Voxtera: tick spawn protection timers down.
         {
+            let entities = self.state.ecs().entities();
             let mut spawn_protection = self.state.ecs().write_storage::<comp::SpawnProtection>();
-            for (_, sp) in (&self.state.ecs().entities(), &mut spawn_protection).join() {
-                if let Some(new_remaining) = sp.remaining.checked_sub(dt) {
+            let mut expired = Vec::new();
+            for (entity, sp) in (&entities, &mut spawn_protection).join() {
+                if let Some(new_remaining) = next_spawn_protection_remaining(sp.remaining, dt) {
                     sp.remaining = new_remaining;
                 } else {
-                    sp.remaining = std::time::Duration::ZERO;
+                    expired.push(entity);
                 }
             }
-            let entities: Vec<specs::Entity> = self.state.ecs().entities().join().collect();
-            for entity in entities {
-                if spawn_protection.get(entity).is_some_and(|sp| sp.remaining.is_zero()) {
-                    let _ = spawn_protection.remove(entity);
-                }
+            for entity in expired {
+                let _ = spawn_protection.remove(entity);
             }
         }
 
