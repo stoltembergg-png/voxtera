@@ -103,9 +103,7 @@ impl Client {
         self.minimum_loaded_chunk = Some(chunk);
     }
 
-    pub(crate) fn clear_minimum_loaded_chunk(&mut self) {
-        self.minimum_loaded_chunk = None;
-    }
+    pub(crate) fn clear_minimum_loaded_chunk(&mut self) { self.minimum_loaded_chunk = None; }
 
     pub(crate) fn send<M: Into<ServerMsg>>(&self, msg: M) -> Result<(), StreamError> {
         // TODO: hack to avoid locking stream mutex while serializing the message,
