@@ -287,8 +287,39 @@ pub struct Server {
     chat_cache: ChatCache,
     database_settings: Arc<RwLock<DatabaseSettings>>,
     disconnect_all_clients_requested: bool,
+    calendar_last_refresh: Instant,
 
     event_dispatcher: SendDispatcher<'static>,
+}
+
+const CALENDAR_REFRESH_INTERVAL: Duration = Duration::from_secs(60);
+
+fn calendar_refresh_due(last_refresh: Instant, now: Instant) -> bool {
+    now.duration_since(last_refresh) >= CALENDAR_REFRESH_INTERVAL
+}
+
+#[cfg(test)]
+mod calendar_refresh_tests {
+    use super::{calendar_refresh_due, CALENDAR_REFRESH_INTERVAL};
+    use std::time::Instant;
+
+    #[test]
+    fn refresh_is_due_at_the_interval_boundary() {
+        let last_refresh = Instant::now();
+        assert!(calendar_refresh_due(
+            last_refresh,
+            last_refresh + CALENDAR_REFRESH_INTERVAL,
+        ));
+    }
+
+    #[test]
+    fn refresh_is_not_due_before_the_interval() {
+        let last_refresh = Instant::now();
+        assert!(!calendar_refresh_due(
+            last_refresh,
+            last_refresh + CALENDAR_REFRESH_INTERVAL - std::time::Duration::from_nanos(1),
+        ));
+    }
 }
 
 impl Server {
@@ -740,6 +771,10 @@ impl Server {
             chat_cache,
             database_settings,
             disconnect_all_clients_requested: false,
+            // Force the first tick to populate the ECS calendar resource.
+            calendar_last_refresh: Instant::now()
+                .checked_sub(CALENDAR_REFRESH_INTERVAL)
+                .unwrap_or_else(Instant::now),
 
             event_dispatcher: Self::create_event_dispatcher(pools),
         };
@@ -826,16 +861,19 @@ impl Server {
         self.state.ecs().write_resource::<Tick>().0 += 1;
         self.state.ecs().write_resource::<TickStart>().0 = Instant::now();
 
-        // Update calendar events as time changes
-        // TODO: If a lot of calendar events get added, this might become expensive.
-        // Maybe don't do this every tick?
-        let new_calendar = self
-            .state
-            .ecs()
-            .read_resource::<Settings>()
-            .calendar_mode
-            .calendar_now();
-        *self.state.ecs_mut().write_resource::<Calendar>() = new_calendar;
+        // Calendar events change on date boundaries, so rebuilding this resource
+        // every simulation tick only adds clock calls and allocations to the hot path.
+        let now = Instant::now();
+        if calendar_refresh_due(self.calendar_last_refresh, now) {
+            let new_calendar = self
+                .state
+                .ecs()
+                .read_resource::<Settings>()
+                .calendar_mode
+                .calendar_now();
+            *self.state.ecs_mut().write_resource::<Calendar>() = new_calendar;
+            self.calendar_last_refresh = now;
+        }
 
         #[cfg(feature = "hot-site")]
         if let Ok(lib) = world::LIB.lock()
