@@ -29,6 +29,36 @@ use std::{
 
 pub type PersistenceScheduler = SysScheduler<persistence::Sys>;
 
+/// Derived metrics are exported less frequently than simulation timing metrics.
+pub const METRICS_INTERVAL_TICKS: u64 = 10;
+
+/// Returns whether derived metrics should be exported after a server tick.
+///
+/// `Server::tick` increments the counter before running the metrics pass, so
+/// tick one is the initial snapshot and subsequent snapshots occur every ten
+/// ticks.
+pub const fn should_run_metrics(tick: u64) -> bool {
+    tick == 1 || tick.is_multiple_of(METRICS_INTERVAL_TICKS)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{METRICS_INTERVAL_TICKS, should_run_metrics};
+
+    #[test]
+    fn metrics_export_runs_on_initial_and_interval_ticks() {
+        assert!(should_run_metrics(1));
+        assert!(should_run_metrics(METRICS_INTERVAL_TICKS));
+        assert!(should_run_metrics(METRICS_INTERVAL_TICKS * 2));
+    }
+
+    #[test]
+    fn metrics_export_skips_ticks_between_intervals() {
+        assert!(!should_run_metrics(2));
+        assert!(!should_run_metrics(METRICS_INTERVAL_TICKS - 1));
+    }
+}
+
 pub fn add_server_systems(dispatch_builder: &mut DispatcherBuilder) {
     dispatch::<melee::Sys>(dispatch_builder, &[&projectile::Sys::sys_name()]);
     //Note: server should not depend on interpolation system
