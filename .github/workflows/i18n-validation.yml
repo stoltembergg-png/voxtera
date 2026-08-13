@@ -27,7 +27,7 @@ jobs:
       - name: Install Rust nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-06-13-x86_64-pc-windows-msvc
+          toolchain: nightly-2026-06-13
 
       - name: Parse and validate pt-BR localization
         run: cargo run -p veloren-client-i18n --features bin --bin i18n_check -- pt-BR
