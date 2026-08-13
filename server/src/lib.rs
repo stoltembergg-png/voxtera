@@ -287,15 +287,16 @@ pub struct Server {
     chat_cache: ChatCache,
     database_settings: Arc<RwLock<DatabaseSettings>>,
     disconnect_all_clients_requested: bool,
-    calendar_last_refresh: Instant,
+    calendar_last_refresh: Option<Instant>,
 
     event_dispatcher: SendDispatcher<'static>,
 }
 
 const CALENDAR_REFRESH_INTERVAL: Duration = Duration::from_secs(60);
 
-fn calendar_refresh_due(last_refresh: Instant, now: Instant) -> bool {
-    now.duration_since(last_refresh) >= CALENDAR_REFRESH_INTERVAL
+fn calendar_refresh_due(last_refresh: Option<Instant>, now: Instant) -> bool {
+    last_refresh
+        .is_none_or(|last_refresh| now.duration_since(last_refresh) >= CALENDAR_REFRESH_INTERVAL)
 }
 
 #[cfg(test)]
@@ -307,16 +308,21 @@ mod calendar_refresh_tests {
     fn refresh_is_due_at_the_interval_boundary() {
         let last_refresh = Instant::now();
         assert!(calendar_refresh_due(
-            last_refresh,
+            Some(last_refresh),
             last_refresh + CALENDAR_REFRESH_INTERVAL,
         ));
+    }
+
+    #[test]
+    fn refresh_is_due_without_a_previous_refresh() {
+        assert!(calendar_refresh_due(None, Instant::now()));
     }
 
     #[test]
     fn refresh_is_not_due_before_the_interval() {
         let last_refresh = Instant::now();
         assert!(!calendar_refresh_due(
-            last_refresh,
+            Some(last_refresh),
             last_refresh + CALENDAR_REFRESH_INTERVAL - std::time::Duration::from_nanos(1),
         ));
     }
@@ -771,10 +777,8 @@ impl Server {
             chat_cache,
             database_settings,
             disconnect_all_clients_requested: false,
-            // Force the first tick to populate the ECS calendar resource.
-            calendar_last_refresh: Instant::now()
-                .checked_sub(CALENDAR_REFRESH_INTERVAL)
-                .unwrap_or_else(Instant::now),
+            // No previous refresh means the first tick must populate the ECS calendar.
+            calendar_last_refresh: None,
 
             event_dispatcher: Self::create_event_dispatcher(pools),
         };
@@ -872,7 +876,7 @@ impl Server {
                 .calendar_mode
                 .calendar_now();
             *self.state.ecs_mut().write_resource::<Calendar>() = new_calendar;
-            self.calendar_last_refresh = now;
+            self.calendar_last_refresh = Some(now);
         }
 
         #[cfg(feature = "hot-site")]
