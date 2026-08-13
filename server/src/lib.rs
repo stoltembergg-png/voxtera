@@ -1340,7 +1340,7 @@ impl Server {
             let friends_path = self.data_dir().path.join("friends.ron");
             self.state
                 .ecs()
-                .read_resource::<friends::FriendsResource>()
+                .write_resource::<friends::FriendsResource>()
                 .save_to_file(&friends_path);
             // Flush audit log
             self.state
