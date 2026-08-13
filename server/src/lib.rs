@@ -6,6 +6,7 @@
 #![deny(clippy::clone_on_ref_ptr)]
 #![feature(box_patterns, option_zip, const_type_name, slice_partition_dedup)]
 
+pub mod audit_log;
 pub mod automod;
 mod character_creator;
 pub mod chat;
@@ -17,21 +18,20 @@ pub mod connection_handler;
 mod data_dir;
 pub mod error;
 pub mod events;
-pub mod audit_log;
 pub mod friends;
 pub mod input;
 pub mod location;
 pub mod lod;
 pub mod login_provider;
 pub mod metrics;
-pub mod supabase_db;
-pub mod starter_kits;
 pub mod persistence;
 mod pet;
 pub mod presence;
 pub mod rtsim;
 pub mod settings;
+pub mod starter_kits;
 pub mod state_ext;
+pub mod supabase_db;
 pub mod sys;
 #[cfg(feature = "persistent_world")]
 pub mod terrain_persistence;
@@ -181,10 +181,7 @@ pub struct Tick(u64);
 /// Advances spawn protection and reports whether the component should remain.
 /// Expired protection is removed in the same tick instead of being left at
 /// zero until a second full-entity cleanup scan.
-fn next_spawn_protection_remaining(
-    remaining: Duration,
-    dt: Duration,
-) -> Option<Duration> {
+fn next_spawn_protection_remaining(remaining: Duration, dt: Duration) -> Option<Duration> {
     remaining.checked_sub(dt).filter(|next| !next.is_zero())
 }
 
