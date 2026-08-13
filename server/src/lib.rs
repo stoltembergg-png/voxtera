@@ -6,6 +6,7 @@
 #![deny(clippy::clone_on_ref_ptr)]
 #![feature(box_patterns, option_zip, const_type_name, slice_partition_dedup)]
 
+pub mod audit_log;
 pub mod automod;
 mod character_creator;
 pub mod chat;
@@ -17,21 +18,20 @@ pub mod connection_handler;
 mod data_dir;
 pub mod error;
 pub mod events;
-pub mod audit_log;
 pub mod friends;
 pub mod input;
 pub mod location;
 pub mod lod;
 pub mod login_provider;
 pub mod metrics;
-pub mod supabase_db;
-pub mod starter_kits;
 pub mod persistence;
 mod pet;
 pub mod presence;
 pub mod rtsim;
 pub mod settings;
+pub mod starter_kits;
 pub mod state_ext;
+pub mod supabase_db;
 pub mod sys;
 #[cfg(feature = "persistent_world")]
 pub mod terrain_persistence;
@@ -1265,7 +1265,7 @@ impl Server {
             let friends_path = self.data_dir().path.join("friends.ron");
             self.state
                 .ecs()
-                .read_resource::<friends::FriendsResource>()
+                .write_resource::<friends::FriendsResource>()
                 .save_to_file(&friends_path);
             // Flush audit log
             self.state
@@ -1286,7 +1286,10 @@ impl Server {
             }
             let entities: Vec<specs::Entity> = self.state.ecs().entities().join().collect();
             for entity in entities {
-                if spawn_protection.get(entity).is_some_and(|sp| sp.remaining.is_zero()) {
+                if spawn_protection
+                    .get(entity)
+                    .is_some_and(|sp| sp.remaining.is_zero())
+                {
                     let _ = spawn_protection.remove(entity);
                 }
             }

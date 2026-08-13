@@ -105,6 +105,9 @@ pub struct FriendsResource {
 
     /// Pending notifications to deliver: (target_uuid, message).
     pending_notifications: Vec<(Uuid, String)>,
+
+    /// Whether the serializable state changed since the last successful save.
+    persistence_dirty: bool,
 }
 
 impl Default for FriendsResource {
@@ -115,6 +118,7 @@ impl Default for FriendsResource {
             aliases: HashMap::new(),
             uuid_to_entity: HashMap::new(),
             pending_notifications: Vec::new(),
+            persistence_dirty: false,
         }
     }
 }
@@ -125,7 +129,12 @@ impl FriendsResource {
     /// Call when a player logs in. Registers them as online and notifies
     /// accepted friends.
     pub fn player_online(&mut self, uuid: Uuid, alias: String, entity: EcsEntity) {
+        let alias_changed = self
+            .aliases
+            .get(&uuid)
+            .map_or(true, |current_alias| current_alias != &alias);
         self.aliases.insert(uuid, alias.clone());
+        self.persistence_dirty |= alias_changed;
         self.uuid_to_entity.insert(uuid, entity);
         self.online_players.insert(uuid);
 
@@ -217,6 +226,7 @@ impl FriendsResource {
             {
                 // Auto-accept: promote both sides to Accepted.
                 self.promote_to_accepted(from, to);
+                self.persistence_dirty = true;
                 return FriendRequestResult::Sent {
                     to_alias: format!("{} (auto-accepted)", to_alias),
                 };
@@ -249,6 +259,7 @@ impl FriendsResource {
             alias: from_alias.clone(),
             status: FriendStatus::PendingIncoming,
         });
+        self.persistence_dirty = true;
 
         // Notify the target if online.
         if self.online_players.contains(&to) {
@@ -281,6 +292,7 @@ impl FriendsResource {
         }
 
         self.promote_to_accepted(acceptor, requester);
+        self.persistence_dirty = true;
 
         // Notify requester if online.
         let acceptor_alias = self
@@ -316,8 +328,16 @@ impl FriendsResource {
         };
 
         // Also remove from the other side.
-        if let Some(list) = self.friend_lists.get_mut(&target) {
+        let target_removed = if let Some(list) = self.friend_lists.get_mut(&target) {
+            let before = list.len();
             list.retain(|f| f.uuid != player);
+            list.len() < before
+        } else {
+            false
+        };
+
+        if removed || target_removed {
+            self.persistence_dirty = true;
         }
 
         if removed {
@@ -455,31 +475,33 @@ struct SerializableFriends {
 
 impl FriendsResource {
     /// Save friend lists and aliases to a .ron file atomically.
-    pub fn save_to_file(&self, path: &Path) {
+    ///
+    /// Returns immediately when no serializable state changed since the last
+    /// successful save. Failed writes leave the dirty flag set for retry.
+    pub fn save_to_file(&mut self, path: &Path) {
+        if !self.persistence_dirty {
+            return;
+        }
         let data = SerializableFriends {
             friend_lists: self.friend_lists.clone(),
             aliases: self.aliases.clone(),
         };
-        let ron_str = match ron::ser::to_string_pretty(
-            &data,
-            ron::ser::PrettyConfig::default(),
-        ) {
+        let ron_str = match ron::ser::to_string_pretty(&data, ron::ser::PrettyConfig::default()) {
             Ok(s) => s,
             Err(e) => {
                 warn!(?e, "Failed to serialize friends data");
                 return;
             },
         };
-        let atomic_file = atomicwrites::AtomicFile::new(
-            path,
-            atomicwrites::OverwriteBehavior::AllowOverwrite,
-        );
+        let atomic_file =
+            atomicwrites::AtomicFile::new(path, atomicwrites::OverwriteBehavior::AllowOverwrite);
         if let Err(e) = atomic_file.write(|file| {
             use std::io::Write;
             file.write_all(ron_str.as_bytes())
         }) {
             warn!(?e, "Failed to save friends.ron");
         } else {
+            self.persistence_dirty = false;
             debug!("Saved friends.ron ({} players)", data.friend_lists.len());
         }
     }
@@ -499,16 +521,14 @@ impl FriendsResource {
         };
         match ron::from_str::<SerializableFriends>(&contents) {
             Ok(data) => {
-                info!(
-                    players = data.friend_lists.len(),
-                    "Loaded friends.ron"
-                );
+                info!(players = data.friend_lists.len(), "Loaded friends.ron");
                 Self {
                     friend_lists: data.friend_lists,
                     aliases: data.aliases,
                     online_players: HashSet::new(),
                     uuid_to_entity: HashMap::new(),
                     pending_notifications: Vec::new(),
+                    persistence_dirty: false,
                 }
             },
             Err(e) => {
@@ -747,5 +767,57 @@ mod tests {
 
         let result = res.send_request(alice, bob);
         assert!(matches!(result, FriendRequestResult::AlreadyFriends { .. }));
+    }
+
+    #[test]
+    fn test_persistence_dirty_tracks_friend_changes() {
+        let mut res = FriendsResource::default();
+        let alice = Uuid::from_u128(1);
+        let bob = Uuid::from_u128(2);
+        res.aliases.insert(alice, "Alice".into());
+        res.aliases.insert(bob, "Bob".into());
+
+        assert!(!res.persistence_dirty);
+        res.send_request(alice, bob);
+        assert!(res.persistence_dirty);
+    }
+
+    #[test]
+    fn test_persistence_dirty_is_clear_for_loaded_state() {
+        let res = FriendsResource::default();
+        assert!(!res.persistence_dirty);
+    }
+
+    #[test]
+    fn test_persistence_dirty_clears_after_successful_save() {
+        let mut res = FriendsResource::default();
+        let alice = Uuid::from_u128(1);
+        let bob = Uuid::from_u128(2);
+        res.aliases.insert(alice, "Alice".into());
+        res.aliases.insert(bob, "Bob".into());
+        res.send_request(alice, bob);
+        assert!(res.persistence_dirty);
+
+        let path = std::env::temp_dir().join(format!("voxtera-friends-{}.ron", alice));
+        res.save_to_file(&path);
+        assert!(!res.persistence_dirty);
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn test_persistence_dirty_is_retained_when_save_fails() {
+        let mut res = FriendsResource::default();
+        let alice = Uuid::from_u128(1);
+        let bob = Uuid::from_u128(2);
+        res.aliases.insert(alice, "Alice".into());
+        res.aliases.insert(bob, "Bob".into());
+        res.send_request(alice, bob);
+
+        let parent = std::env::temp_dir().join(format!("voxtera-friends-parent-{}", alice));
+        std::fs::write(&parent, b"not a directory").expect("create invalid save parent");
+        let invalid_path = parent.join("friends.ron");
+        res.save_to_file(&invalid_path);
+        assert!(res.persistence_dirty);
+        let _ = std::fs::remove_file(parent);
     }
 }
