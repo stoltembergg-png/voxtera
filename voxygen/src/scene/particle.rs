@@ -37,7 +37,8 @@ use std::{
 };
 use vek::*;
 
-/// Reused allocation for smoke particle properties — avoids per-frame Vec alloc.
+/// Reused allocation for smoke particle properties — avoids per-frame Vec
+/// alloc.
 struct SmokeProperties {
     position: Vec3<i32>,
     strength: f32,
@@ -815,10 +816,11 @@ impl ParticleMgr {
             // Enforce particle cap — drop oldest (smallest alive_until) first
             // to prevent GPU stutters during large battles.
             if self.particles.len() > MAX_PARTICLES {
-                self.particles
-                    .sort_unstable_by(|a, b| a.alive_until.partial_cmp(&b.alive_until).expect(
-                        "particle alive_until should not be NaN",
-                    ));
+                self.particles.sort_unstable_by(|a, b| {
+                    a.alive_until
+                        .partial_cmp(&b.alive_until)
+                        .expect("particle alive_until should not be NaN")
+                });
                 self.particles
                     .drain(0..self.particles.len() - MAX_PARTICLES);
             }
