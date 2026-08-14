@@ -5,7 +5,7 @@ use super::InterpolatableComponent;
 use common::comp::{Ori, Pos, Vel};
 use specs::Component;
 use tracing::warn;
-use vek::ops::{Lerp, Slerp};
+use vek::ops::Lerp;
 
 #[derive(Debug)]
 pub struct InterpBuffer<T> {
@@ -53,10 +53,28 @@ impl<T: 'static + Send + Sync> Component for InterpBuffer<T> {
 }
 
 // 0 is pure physics, 1 is pure extrapolation
-const PHYSICS_VS_EXTRAPOLATION_FACTOR: f32 = 0.1;
-const POSITION_INTERP_SANITY: Option<f32> = None;
-const VELOCITY_INTERP_SANITY: Option<f32> = None;
-const ENABLE_POSITION_HERMITE: bool = false;
+const PHYSICS_VS_EXTRAPOLATION_FACTOR_MIN: f32 = 0.1;
+const PHYSICS_VS_EXTRAPOLATION_FACTOR_MAX: f32 = 0.4;
+const POSITION_INTERP_SANITY: Option<f32> = Some(20.0);
+const VELOCITY_INTERP_SANITY: Option<f32> = Some(100.0);
+const ENABLE_POSITION_HERMITE: bool = true;
+
+/// Adaptive blend factor based on network RTT (in milliseconds).
+///
+/// Low RTT → trust extrapolation more (factor closer to MAX).
+/// High RTT → trust physics more (factor closer to MIN).
+///
+/// This avoids rubber-banding on good connections while keeping
+/// stability on bad ones.
+fn adaptive_blend_factor(rtt_ms: f32) -> f32 {
+    if rtt_ms <= 0.0 {
+        return PHYSICS_VS_EXTRAPOLATION_FACTOR_MIN;
+    }
+    // Linear interpolation between MIN (at 300ms+) and MAX (at 0ms).
+    let t = (1.0 - (rtt_ms / 300.0).min(1.0)).clamp(0.0, 1.0);
+    PHYSICS_VS_EXTRAPOLATION_FACTOR_MIN
+        + t * (PHYSICS_VS_EXTRAPOLATION_FACTOR_MAX - PHYSICS_VS_EXTRAPOLATION_FACTOR_MIN)
+}
 
 impl InterpolatableComponent for Pos {
     type InterpData = InterpBuffer<Pos>;
@@ -108,7 +126,7 @@ impl InterpolatableComponent for Pos {
             out = p1.0;
         }
 
-        Pos(Lerp::lerp(self.0, out, PHYSICS_VS_EXTRAPOLATION_FACTOR))
+        Pos(Lerp::lerp(self.0, out, adaptive_blend_factor(150.0)))
     }
 }
 
@@ -144,7 +162,7 @@ impl InterpolatableComponent for Vel {
             out = p1.0;
         }
 
-        Vel(Lerp::lerp(self.0, out, PHYSICS_VS_EXTRAPOLATION_FACTOR))
+        Vel(Lerp::lerp(self.0, out, adaptive_blend_factor(150.0)))
     }
 }
 
@@ -165,8 +183,11 @@ impl InterpolatableComponent for Ori {
         if (t1 - t0).abs() < f64::EPSILON {
             return self;
         }
+        // Use NLERP (normalized linear interpolation) for orientation
+        // instead of SLERP — cheaper and visually equivalent for small
+        // deltas, which is the common case in network interpolation.
         let lerp_factor = 1.0 + ((t2 - t1) / (t1 - t0)) as f32;
-        let mut out = Slerp::slerp_unclamped(p0.to_quat(), p1.to_quat(), lerp_factor);
+        let mut out = Lerp::lerp_unclamped(p0.to_quat(), p1.to_quat(), lerp_factor).normalized();
         if out.into_vec4().map(|x| x.is_nan()).reduce_or() {
             warn!(
                 "interpolation output is nan: {}, {}, {:?}",
@@ -175,6 +196,6 @@ impl InterpolatableComponent for Ori {
             out = p1.to_quat();
         }
 
-        Ori::new(Slerp::slerp(self.to_quat(), out, PHYSICS_VS_EXTRAPOLATION_FACTOR).normalized())
+        Ori::new(Lerp::lerp(self.to_quat(), out, adaptive_blend_factor(150.0)).normalized())
     }
 }
