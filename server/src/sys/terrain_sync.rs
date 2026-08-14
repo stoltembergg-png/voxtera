@@ -4,14 +4,30 @@ use crate::{Settings, chunk_serialize::ChunkSendEntry, client::Client};
 use common::{
     comp::{Pos, Presence},
     event::EventBus,
+    terrain::CoordinateConversions,
 };
 use common_ecs::{Job, Origin, Phase, System};
 use common_net::msg::{CompressedData, ServerGeneral};
 use common_state::TerrainChanges;
 use rayon::prelude::*;
-use specs::{Entities, Join, Read, ReadExpect, ReadStorage};
+use specs::{Entities, Read, ReadExpect, ReadStorage};
 use std::sync::Arc;
-#[cfg(feature = "worldgen")] use world::World;
+use vek::Vec2;
+#[cfg(feature = "worldgen")]
+use world::World;
+
+/// Returns `true` if any block in `modified_block_chunks` falls within the
+/// view distance of the player at `player_chunk_pos` with squared VD
+/// `player_vd_sqr`.
+fn blocks_in_player_vd(
+    player_chunk_pos: Vec2<i16>,
+    player_vd_sqr: i32,
+    modified_block_chunks: &[Vec2<i32>],
+) -> bool {
+    modified_block_chunks
+        .iter()
+        .any(|&chunk| super::terrain::chunk_in_vd(player_chunk_pos, player_vd_sqr, chunk))
+}
 
 /// This systems sends modified chunks (existing chunks that had a new chunk
 /// generated) to clients as well as block modifications in existing chunks.
@@ -108,8 +124,32 @@ impl<'a> System<'a> for Sys {
         // TODO: Don't send all changed blocks to all clients
         // Sync changed blocks
         if !terrain_changes.modified_blocks.is_empty() {
+            // Collect the unique chunk keys that contain modified blocks so we can
+            // skip clients whose view distance does not overlap any of them.
+            let modified_block_chunks: Vec<Vec2<i32>> = terrain_changes
+                .modified_blocks
+                .keys()
+                .map(|wpos| wpos.xy().wpos_to_cpos())
+                .collect();
+
             let mut lazy_msg = None;
-            for (_, client) in (&presences, &clients).join() {
+            for ((player_chunk_pos, player_vd_sqr), entity) in &presences_position_entities {
+                let client = clients.get(*entity);
+                if client.is_none() {
+                    continue;
+                }
+                let client = client.unwrap();
+
+                let player_in_range = blocks_in_player_vd(
+                    *player_chunk_pos,
+                    *player_vd_sqr,
+                    &modified_block_chunks,
+                );
+
+                if !player_in_range {
+                    continue;
+                }
+
                 if lazy_msg.is_none() {
                     lazy_msg = Some(client.prepare(ServerGeneral::TerrainBlockUpdates(
                         CompressedData::compress(&terrain_changes.modified_blocks, 1),
@@ -118,5 +158,43 @@ impl<'a> System<'a> for Sys {
                 lazy_msg.as_ref().map(|msg| client.send_prepared(msg));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::blocks_in_player_vd;
+    use vek::Vec2;
+
+    #[test]
+    fn blocks_in_vd_returns_true_when_chunk_overlaps() {
+        let player_chunk = Vec2::new(10, 10);
+        let vd_sqr = 9; // VD radius of 3 chunks
+        let modified_chunks = vec![Vec2::new(12, 10)]; // distance 2, within VD
+        assert!(blocks_in_player_vd(player_chunk, vd_sqr, &modified_chunks));
+    }
+
+    #[test]
+    fn blocks_in_vd_returns_false_when_chunk_out_of_range() {
+        let player_chunk = Vec2::new(10, 10);
+        let vd_sqr = 9; // VD radius of 3 chunks
+        let modified_chunks = vec![Vec2::new(20, 10)]; // distance 10, outside VD
+        assert!(!blocks_in_player_vd(player_chunk, vd_sqr, &modified_chunks));
+    }
+
+    #[test]
+    fn blocks_in_vd_returns_false_for_empty_modified_blocks() {
+        let player_chunk = Vec2::new(10, 10);
+        let vd_sqr = 100;
+        let modified_chunks: Vec<Vec2<i32>> = vec![];
+        assert!(!blocks_in_player_vd(player_chunk, vd_sqr, &modified_chunks));
+    }
+
+    #[test]
+    fn blocks_in_vd_returns_true_if_any_chunk_in_range() {
+        let player_chunk = Vec2::new(0, 0);
+        let vd_sqr = 4; // VD radius of 2 chunks
+        let modified_chunks = vec![Vec2::new(100, 100), Vec2::new(1, 1)]; // far + near
+        assert!(blocks_in_player_vd(player_chunk, vd_sqr, &modified_chunks));
     }
 }
