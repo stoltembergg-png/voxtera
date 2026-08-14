@@ -13,8 +13,7 @@ use rayon::prelude::*;
 use specs::{Entities, Read, ReadExpect, ReadStorage};
 use std::sync::Arc;
 use vek::Vec2;
-#[cfg(feature = "worldgen")]
-use world::World;
+#[cfg(feature = "worldgen")] use world::World;
 
 /// Returns `true` if any block in `modified_block_chunks` falls within the
 /// view distance of the player at `player_chunk_pos` with squared VD
@@ -140,11 +139,8 @@ impl<'a> System<'a> for Sys {
                 }
                 let client = client.unwrap();
 
-                let player_in_range = blocks_in_player_vd(
-                    *player_chunk_pos,
-                    *player_vd_sqr,
-                    &modified_block_chunks,
-                );
+                let player_in_range =
+                    blocks_in_player_vd(*player_chunk_pos, *player_vd_sqr, &modified_block_chunks);
 
                 if !player_in_range {
                     continue;
