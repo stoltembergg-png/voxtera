@@ -427,8 +427,9 @@ impl<'a> System<'a> for Sys {
                     }
                 })
             {
-                for uid in &deleted {
-                    client.send_fallible(ServerGeneral::DeleteEntity(*uid));
+                if !deleted.is_empty() {
+                    // Batch entity deletions to reduce per-message header overhead.
+                    client.send_fallible(ServerGeneral::DeleteEntities(deleted.clone()));
                 }
             }
         }
