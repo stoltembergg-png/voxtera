@@ -668,10 +668,8 @@ pub struct DebugInfo {
     pub current_artist: String,
     pub active_channels: ActiveChannels,
     pub audio_cpu_usage: f32,
-    /// Internal resolution scale (e.g. 1.0 = native, 0.75 = 75%)
-    pub internal_resolution_scale: f32,
-    /// Number of shadow chunks being rendered
-    pub num_shadow_chunks: u32,
+    /// Internal render target resolution.
+    pub internal_resolution: Vec2<u32>,
     /// Current anti-aliasing mode name
     pub aa_mode: &'static str,
     /// Pipelines still being created (None = all ready)
@@ -3155,8 +3153,8 @@ impl Hud {
 
             // Internal resolution
             let debug_msg_res = format!(
-                "Internal res: {:.0}x{:.0}",
-                debug_info.internal_resolution_scale, debug_info.internal_resolution_scale,
+                "Internal res: {}x{}",
+                debug_info.internal_resolution.x, debug_info.internal_resolution.y,
             );
             Text::new(&debug_msg_res)
                 .color(TEXT_COLOR)

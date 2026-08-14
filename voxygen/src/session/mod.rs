@@ -1723,13 +1723,7 @@ impl PlayState for SessionState {
                     current_artist: self.scene.music_mgr().current_artist(),
                     active_channels: global_state.audio.get_num_active_channels(),
                     audio_cpu_usage: global_state.audio.get_cpu_usage(),
-                    internal_resolution_scale: global_state
-                        .window
-                        .renderer()
-                        .internal_resolution()
-                        .map(|v| v.x as f32)
-                        .unwrap_or(0.0),
-                    num_shadow_chunks: self.scene.terrain().shadow_chunk_count() as u32,
+                    internal_resolution: global_state.window.renderer().internal_resolution(),
                     aa_mode: match global_state.settings.graphics.render_mode.aa {
                         crate::render::AaMode::Fxaa => "FXAA",
                         crate::render::AaMode::Taa => "TAA",
