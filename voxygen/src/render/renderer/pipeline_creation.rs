@@ -276,6 +276,7 @@ impl ShaderModules {
                 AaMode::MsaaX16 => "antialias.msaa-x16",
                 AaMode::Hqx => "antialias.hqx",
                 AaMode::FxUpscale => "antialias.fxupscale",
+                AaMode::Taa => "antialias.taa",
             })
             .unwrap();
 

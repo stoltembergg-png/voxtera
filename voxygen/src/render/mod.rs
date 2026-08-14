@@ -108,6 +108,12 @@ pub enum AaMode {
     /// Screen-space technique that uses a combination of FXAA and
     /// nearest-neighbour sample retargeting to produce crisp, clean upscaling.
     FxUpscale,
+    /// Temporal anti-aliasing.
+    ///
+    /// Uses sub-pixel jitter and a history buffer to accumulate samples over
+    /// frames, producing smooth edges at lower cost than MSAA. This is a
+    /// simplified implementation without motion-vector reprojection.
+    Taa,
     /// Bilinear filtering.
     ///
     /// Linear interpolation of the color buffer in each axis to determine the
@@ -124,7 +130,12 @@ pub enum AaMode {
 impl AaMode {
     pub fn samples(&self) -> u32 {
         match self {
-            AaMode::None | AaMode::Bilinear | AaMode::Fxaa | AaMode::Hqx | AaMode::FxUpscale => 1,
+            AaMode::None
+            | AaMode::Bilinear
+            | AaMode::Fxaa
+            | AaMode::Hqx
+            | AaMode::FxUpscale
+            | AaMode::Taa => 1,
             AaMode::MsaaX4 => 4,
             AaMode::MsaaX8 => 8,
             AaMode::MsaaX16 => 16,
@@ -231,7 +242,7 @@ pub struct ShadowMapMode {
 }
 
 impl Default for ShadowMapMode {
-    fn default() -> Self { Self { resolution: 1.5 } }  // Voxtera: Higher default shadow resolution
+    fn default() -> Self { Self { resolution: 1.5 } } // Voxtera: Higher default shadow resolution
 }
 
 /// Shadow modes
@@ -338,9 +349,9 @@ impl BloomFactor {
     /// Fraction of output image luminosity that is blurred bloom
     pub fn fraction(self) -> f32 {
         match self {
-            Self::Low => 0.15,  // Voxtera: Slightly increased low bloom
-            Self::Medium => 0.25,  // Voxtera: Increased medium bloom
-            Self::High => 0.35,  // Voxtera: Increased high bloom
+            Self::Low => 0.15,    // Voxtera: Slightly increased low bloom
+            Self::Medium => 0.25, // Voxtera: Increased medium bloom
+            Self::High => 0.35,   // Voxtera: Increased high bloom
             Self::Custom(val) => val.clamp(0.0, 1.0),
         }
     }
