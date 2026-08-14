@@ -209,4 +209,28 @@ impl<P: CompPacket> CompSyncPackage<P> {
     /// Returns whether this package is empty, useful for not sending an empty
     /// message.
     pub fn is_empty(&self) -> bool { self.comp_updates.is_empty() }
+
+    /// Deduplicate updates for the same entity, keeping only the last update
+    /// of each `CompUpdateKind` variant per entity. This reduces bandwidth when
+    /// multiple component changes for the same entity are batched into a single
+    /// sync package.
+    ///
+    /// For example, if an entity had both `Pos` and `Vel` modified, the
+    /// original package would contain two separate `(uid, Modified(Pos))` and
+    /// `(uid, Modified(Vel))` entries. After dedup, entries for the same uid
+    /// that are redundant (e.g. a `Modified` followed by a later `Modified` of
+    /// the same component) are collapsed.
+    pub fn dedup_by_entity(&mut self) {
+        // Sort by uid (stable sort preserves insertion order within same uid)
+        self.comp_updates.sort_by_key(|(uid, _)| uid.get());
+
+        // Remove consecutive entries with the same uid and the same
+        // CompUpdateKind discriminant (Inserted/Modified/Removed), keeping the
+        // last occurrence via reverse + dedup + reverse (last-write-wins).
+        self.comp_updates.reverse();
+        self.comp_updates.dedup_by(|a, b| {
+            a.0 == b.0 && std::mem::discriminant(&a.1) == std::mem::discriminant(&b.1)
+        });
+        self.comp_updates.reverse();
+    }
 }

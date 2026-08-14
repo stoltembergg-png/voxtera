@@ -217,30 +217,56 @@ impl<'a> System<'a> for Sys {
 
                 // Sync tracked components
                 // Get deleted entities in this region from DeletedEntities
-                let (entity_sync_package, comp_sync_package) = trackers.create_sync_packages(
+                let (entity_sync_package, mut comp_sync_package) = trackers.create_sync_packages(
                     &tracked_storages,
                     region.entities(),
                     deleted_entities_in_region,
                 );
+                // Deduplicate component updates for the same entity to reduce
+                // bandwidth (collapses redundant Inserted/Modified/Removed for
+                // the same uid, keeping the last write).
+                comp_sync_package.dedup_by_entity();
                 // We lazily initialize the the synchronization messages in case there are no
                 // clients.
+                let has_entity_sync = !entity_sync_package.created_entities.is_empty()
+                    || !entity_sync_package.deleted_entities.is_empty();
+                let has_comp_sync = !comp_sync_package.is_empty();
                 let mut entity_comp_sync = Either::Left((entity_sync_package, comp_sync_package));
                 for (client, _, client_entity, _) in &mut subscribers {
-                    let msg = entity_comp_sync.right_or_else(
-                        |(entity_sync_package, comp_sync_package)| {
-                            (
-                                client.prepare(ServerGeneral::EntitySync(entity_sync_package)),
-                                client.prepare(ServerGeneral::CompSync(
-                                    comp_sync_package,
-                                    force_updates.get(*client_entity).map_or(0, |f| f.counter()),
-                                )),
-                            )
-                        },
-                    );
+                    let msg =
+                        entity_comp_sync.right_or_else(
+                            |(entity_sync_package, comp_sync_package)| {
+                                (
+                                    if has_entity_sync {
+                                        Some(client.prepare(ServerGeneral::EntitySync(
+                                            entity_sync_package,
+                                        )))
+                                    } else {
+                                        None
+                                    },
+                                    if has_comp_sync {
+                                        Some(
+                                            client.prepare(ServerGeneral::CompSync(
+                                                comp_sync_package,
+                                                force_updates
+                                                    .get(*client_entity)
+                                                    .map_or(0, |f| f.counter()),
+                                            )),
+                                        )
+                                    } else {
+                                        None
+                                    },
+                                )
+                            },
+                        );
                     // We don't care much about stream errors here since they could just represent
                     // network disconnection, which is handled elsewhere.
-                    let _ = client.send_prepared(&msg.0);
-                    let _ = client.send_prepared(&msg.1);
+                    if let Some(ref m) = msg.0 {
+                        let _ = client.send_prepared(m);
+                    }
+                    if let Some(ref m) = msg.1 {
+                        let _ = client.send_prepared(m);
+                    }
                     entity_comp_sync = Either::Right(msg);
                 }
 
