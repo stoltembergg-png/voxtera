@@ -2909,6 +2909,20 @@ impl Client {
                         .delete_entity_and_clear_uid_mapping(entity_uid);
                 }
             },
+            ServerGeneral::BatchCreateEntities(packages) => {
+                for pkg in packages {
+                    self.state.ecs_mut().apply_entity_package(pkg);
+                }
+            },
+            ServerGeneral::DeleteEntities(entity_uids) => {
+                for entity_uid in entity_uids {
+                    if self.uid() != Some(entity_uid) {
+                        self.state
+                            .ecs_mut()
+                            .delete_entity_and_clear_uid_mapping(entity_uid);
+                    }
+                }
+            },
             ServerGeneral::Notification(n) => {
                 let Notification::WaypointSaved { location_name } = n.clone();
                 self.waypoint = Some(location_name);

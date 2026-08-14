@@ -213,6 +213,12 @@ pub enum ServerGeneral {
     CompSync(sync::CompSyncPackage<EcsCompPacket>, u64),
     CreateEntity(sync::EntityPackage<EcsCompPacket>),
     DeleteEntity(Uid),
+    /// Batch entity creation — reduces per-message header overhead
+    /// when many entities enter a client's subscription range at once.
+    BatchCreateEntities(Vec<sync::EntityPackage<EcsCompPacket>>),
+    /// Batch entity deletion — reduces per-message header overhead
+    /// when many entities leave a client's subscription range at once.
+    DeleteEntities(Vec<Uid>),
     Disconnect(DisconnectReason),
     /// Send a popup notification such as "Waypoint Saved"
     Notification(Notification),
@@ -395,6 +401,8 @@ impl ServerMsg {
                         | ServerGeneral::CompSync(_, _)
                         | ServerGeneral::CreateEntity(_)
                         | ServerGeneral::DeleteEntity(_)
+                        | ServerGeneral::BatchCreateEntities(_)
+                        | ServerGeneral::DeleteEntities(_)
                         | ServerGeneral::Disconnect(_)
                         | ServerGeneral::Notification(_)
                         | ServerGeneral::SetPlayerRole(_)
