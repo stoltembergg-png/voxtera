@@ -3,6 +3,7 @@
 
 pub mod addr;
 pub mod error;
+pub mod prediction;
 pub mod supabase_auth;
 
 // Reexports
