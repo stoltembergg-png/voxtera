@@ -3154,8 +3154,7 @@ impl Hud {
             // Internal resolution
             let debug_msg_res = format!(
                 "Internal res: {}x{}",
-                debug_info.internal_resolution.x,
-                debug_info.internal_resolution.y,
+                debug_info.internal_resolution.x, debug_info.internal_resolution.y,
             );
             Text::new(&debug_msg_res)
                 .color(TEXT_COLOR)
