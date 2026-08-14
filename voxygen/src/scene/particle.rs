@@ -49,7 +49,14 @@ pub struct ParticleMgr {
 
     /// GPU Vertex Buffers
     model_cache: HashMap<&'static str, Model<ParticleVertex>>,
+
+    /// Reused allocation for smoke properties — avoids per-frame Vec alloc.
+    smoke_properties_buf: Vec<SmokeProperties>,
 }
+
+/// Maximum number of simultaneous particles. Prevents GPU stutters during
+/// large battles with many explosions. Oldest particles are dropped first.
+const MAX_PARTICLES: usize = 50000;
 
 impl ParticleMgr {
     pub fn new(renderer: &mut Renderer) -> Self {
@@ -58,6 +65,7 @@ impl ParticleMgr {
             scheduler: HeartbeatScheduler::new(),
             instances: default_instances(renderer),
             model_cache: default_cache(renderer),
+            smoke_properties_buf: Vec::new(),
         }
     }
 
@@ -434,17 +442,15 @@ impl ParticleMgr {
                 // Determine particle type based on target body
                 let particle_mode = target_entity
                     .and_then(|entity| {
-                        ecs.read_storage::<Body>()
-                            .get(entity)
-                            .map(|body| {
-                                if body.bleeds() {
-                                    // Biological entities bleed
-                                    ParticleMode::Blood
-                                } else {
-                                    // Non-biological (armor, objects) get sparks
-                                    ParticleMode::GunPowderSpark
-                                }
-                            })
+                        ecs.read_storage::<Body>().get(entity).map(|body| {
+                            if body.bleeds() {
+                                // Biological entities bleed
+                                ParticleMode::Blood
+                            } else {
+                                // Non-biological (armor, objects) get sparks
+                                ParticleMode::GunPowderSpark
+                            }
+                        })
                     })
                     .unwrap_or(ParticleMode::Blood);
 
@@ -452,19 +458,20 @@ impl ParticleMgr {
                 let particle_count = if info.precise { 20 } else { 10 };
 
                 // Create impact particles
-                self.particles.resize_with(self.particles.len() + particle_count, || {
-                    Particle::new(
-                        Duration::from_millis(if info.precise { 400 } else { 250 }),
-                        time,
-                        particle_mode,
-                        *pos + Vec3::new(
-                            rng.random_range(-0.3..0.3),
-                            rng.random_range(-0.3..0.3),
-                            rng.random_range(0.0..0.5),
-                        ),
-                        scene_data,
-                    )
-                });
+                self.particles
+                    .resize_with(self.particles.len() + particle_count, || {
+                        Particle::new(
+                            Duration::from_millis(if info.precise { 400 } else { 250 }),
+                            time,
+                            particle_mode,
+                            *pos + Vec3::new(
+                                rng.random_range(-0.3..0.3),
+                                rng.random_range(-0.3..0.3),
+                                rng.random_range(0.0..0.5),
+                            ),
+                            scene_data,
+                        )
+                    });
 
                 // Add energy sparks for critical hits
                 if info.precise {
@@ -797,6 +804,14 @@ impl ParticleMgr {
             self.maintain_marker_particles(scene_data);
             self.maintain_arcing_particles(scene_data);
             self.maintain_pool_particles(scene_data);
+
+            // Enforce particle cap — drop oldest (smallest alive_until) first
+            // to prevent GPU stutters during large battles.
+            if self.particles.len() > MAX_PARTICLES {
+                self.particles.sort_unstable_by_key(|p| p.alive_until);
+                self.particles
+                    .drain(0..self.particles.len() - MAX_PARTICLES);
+            }
 
             self.upload_particles(renderer);
         } else {
@@ -3900,7 +3915,8 @@ impl ParticleMgr {
                         .collect::<Vec<_>>(),
                 );
 
-            let mut smoke_properties: Vec<SmokeProperties> = Vec::new();
+            let mut smoke_properties = std::mem::take(&mut self.smoke_properties_buf);
+            smoke_properties.clear();
             let mut sum = 0.0_f32;
             for (pos, kind, temperature, humidity) in smokers {
                 let (strength, dry_chance) = {
@@ -3938,6 +3954,8 @@ impl ParticleMgr {
                 + (rng.random::<f32>() < avg_particles.fract()) as usize;
             let chosen = smoke_properties
                 .sample_weighted(&mut rng, particle_count, |smoker| smoker.strength);
+            // Return the allocation to the reused buffer
+            self.smoke_properties_buf = smoke_properties;
             if let Ok(chosen) = chosen {
                 self.particles.extend(chosen.map(|smoker| {
                     Particle::new(
