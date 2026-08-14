@@ -296,6 +296,9 @@ widget_ids! {
         current_biome,
         current_site,
         graphics_backend,
+        aa_mode,
+        internal_res,
+        pipeline_status,
         gpu_timings[],
         weather,
         song_info,
@@ -665,6 +668,14 @@ pub struct DebugInfo {
     pub current_artist: String,
     pub active_channels: ActiveChannels,
     pub audio_cpu_usage: f32,
+    /// Internal resolution scale (e.g. 1.0 = native, 0.75 = 75%)
+    pub internal_resolution_scale: f32,
+    /// Number of shadow chunks being rendered
+    pub num_shadow_chunks: u32,
+    /// Current anti-aliasing mode name
+    pub aa_mode: &'static str,
+    /// Pipelines still being created (None = all ready)
+    pub pipeline_creation: Option<(usize, usize)>,
 }
 
 pub struct HudInfo<'a> {
@@ -1494,10 +1505,9 @@ impl Hud {
 
     pub fn clear_chat(&mut self) { self.clear_chat = true; }
 
-    /// Trigger a hit flash effect on the crosshair (called when player hits an enemy)
-    pub fn trigger_crosshair_hit_flash(&mut self) {
-        self.crosshair_hit_flash = 1.0;
-    }
+    /// Trigger a hit flash effect on the crosshair (called when player hits an
+    /// enemy)
+    pub fn trigger_crosshair_hit_flash(&mut self) { self.crosshair_hit_flash = 1.0; }
 
     pub fn set_prompt_dialog(&mut self, prompt_dialog: PromptDialogSettings) {
         self.show.prompt_dialog = Some(prompt_dialog);
@@ -3132,6 +3142,44 @@ impl Hud {
             largest_str_len = usize::max(largest_str_len, debug_msg_graphics_backend.len());
             debug_msg_line_count += 1;
 
+            // AA mode
+            let debug_msg_aa = format!("AA: {}", debug_info.aa_mode);
+            Text::new(&debug_msg_aa)
+                .color(TEXT_COLOR)
+                .down_from(self.ids.graphics_backend, V_PAD)
+                .font_id(self.fonts.cyri.conrod_id)
+                .font_size(self.fonts.cyri.scale(FONT_SCALE))
+                .set(self.ids.aa_mode, ui_widgets);
+            largest_str_len = usize::max(largest_str_len, debug_msg_aa.len());
+            debug_msg_line_count += 1;
+
+            // Internal resolution
+            let debug_msg_res = format!(
+                "Internal res: {:.0}x{:.0}",
+                debug_info.internal_resolution_scale, debug_info.internal_resolution_scale,
+            );
+            Text::new(&debug_msg_res)
+                .color(TEXT_COLOR)
+                .down_from(self.ids.aa_mode, V_PAD)
+                .font_id(self.fonts.cyri.conrod_id)
+                .font_size(self.fonts.cyri.scale(FONT_SCALE))
+                .set(self.ids.internal_res, ui_widgets);
+            largest_str_len = usize::max(largest_str_len, debug_msg_res.len());
+            debug_msg_line_count += 1;
+
+            // Pipeline creation status
+            if let Some((done, total)) = debug_info.pipeline_creation {
+                let debug_msg_pipelines = format!("Pipelines: {}/{}", done, total);
+                Text::new(&debug_msg_pipelines)
+                    .color(TEXT_COLOR)
+                    .down_from(self.ids.internal_res, V_PAD)
+                    .font_id(self.fonts.cyri.conrod_id)
+                    .font_size(self.fonts.cyri.scale(FONT_SCALE))
+                    .set(self.ids.pipeline_status, ui_widgets);
+                largest_str_len = usize::max(largest_str_len, debug_msg_pipelines.len());
+                debug_msg_line_count += 1;
+            }
+
             let gpu_timings = global_state.window.renderer().timings();
 
             // GPU timing for different pipelines
@@ -3982,13 +4030,8 @@ impl Hud {
                 .get(info.viewpoint_entity)
                 .is_some();
             if is_admin {
-                let _ = AdminPanel::new(
-                    &self.imgs,
-                    &self.fonts,
-                    i18n,
-                    client,
-                )
-                .set(self.ids.admin_panel, ui_widgets);
+                let _ = AdminPanel::new(&self.imgs, &self.fonts, i18n, client)
+                    .set(self.ids.admin_panel, ui_widgets);
             } else {
                 // Non-admins can never open it; close it silently
                 self.show.admin_panel = false;
