@@ -20,6 +20,13 @@ fn minimum_radius_is_cached(cached_chunk: Option<Vec2<i32>>, current_chunk: Vec2
     cached_chunk == Some(current_chunk)
 }
 
+fn minimum_radius_cache_after_scan(
+    current_chunk: Vec2<i32>,
+    missing_chunk_found: bool,
+) -> Option<Vec2<i32>> {
+    (!missing_chunk_found).then_some(current_chunk)
+}
+
 /// This system will handle new messages from clients
 #[derive(Default)]
 pub struct Sys;
@@ -129,22 +136,31 @@ impl<'a> System<'a> for Sys {
 
                     // Load a minimum radius of chunks around each player.
                     // This is used to prevent view distance reloading exploits and make sure that
-                    // entity simulation occurs within a minimum radius around the
-                    // player.
+                    // entity simulation occurs within a minimum radius around the player.
                     if let Some(pos) = positions.get(entity) {
                         let player_chunk = pos
                             .0
                             .xy()
                             .as_::<i32>()
                             .wpos_to_cpos();
-                        for rpos in Spiral2d::new().take((crate::MIN_VD as usize + 1).pow(2)) {
-                            let key = player_chunk + rpos;
-                            if terrain.get_key(key).is_none() {
-                                // TODO: @zesterer do we want to be sending these chunk to the
-                                // client even if they aren't
-                                // requested? If we don't we could replace the
-                                // entity here with Option<Entity> and pass in None.
-                                chunk_requests.push(ChunkRequest { entity, key });
+                        if !minimum_radius_is_cached(client.minimum_loaded_chunk(), player_chunk) {
+                            let mut missing_chunk_found = false;
+                            for rpos in
+                                Spiral2d::new().take((crate::MIN_VD as usize + 1).pow(2))
+                            {
+                                let key = player_chunk + rpos;
+                                if terrain.get_key(key).is_none() {
+                                    missing_chunk_found = true;
+                                    // TODO: @zesterer do we want to be sending these chunks to the
+                                    // client even if they aren't requested? If we don't we could
+                                    // replace the entity here with Option<Entity> and pass in None.
+                                    chunk_requests.push(ChunkRequest { entity, key });
+                                }
+                            }
+                            if let Some(cached_chunk) =
+                                minimum_radius_cache_after_scan(player_chunk, missing_chunk_found)
+                            {
+                                client.set_minimum_loaded_chunk(cached_chunk);
                             }
                         }
                     }
@@ -163,7 +179,7 @@ impl<'a> System<'a> for Sys {
 
 #[cfg(test)]
 mod tests {
-    use super::minimum_radius_is_cached;
+    use super::{minimum_radius_cache_after_scan, minimum_radius_is_cached};
     use vek::Vec2;
 
     #[test]
@@ -172,5 +188,12 @@ mod tests {
         assert!(minimum_radius_is_cached(Some(chunk), chunk));
         assert!(!minimum_radius_is_cached(None, chunk));
         assert!(!minimum_radius_is_cached(Some(Vec2::new(5, -2)), chunk));
+    }
+
+    #[test]
+    fn minimum_radius_cache_updates_only_after_complete_scan() {
+        let chunk = Vec2::new(4, -2);
+        assert_eq!(minimum_radius_cache_after_scan(chunk, false), Some(chunk));
+        assert_eq!(minimum_radius_cache_after_scan(chunk, true), None);
     }
 }
