@@ -158,6 +158,8 @@ impl Client {
                     | ServerGeneral::CompSync(_)
                     | ServerGeneral::CreateEntity(_)
                     | ServerGeneral::DeleteEntity(_)
+                    | ServerGeneral::BatchCreateEntities(_)
+                    | ServerGeneral::DeleteEntities(_)
                     | ServerGeneral::Disconnect(_)
                     | ServerGeneral::Notification(_) => self.general_stream.lock().unwrap().send(g),
                 }
@@ -238,6 +240,8 @@ impl Client {
                     | ServerGeneral::CompSync(_, _)
                     | ServerGeneral::CreateEntity(_)
                     | ServerGeneral::DeleteEntity(_)
+                    | ServerGeneral::BatchCreateEntities(_)
+                    | ServerGeneral::DeleteEntities(_)
                     | ServerGeneral::Disconnect(_)
                     | ServerGeneral::Notification(_)
                     | ServerGeneral::SetPlayerRole(_)

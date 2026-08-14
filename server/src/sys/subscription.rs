@@ -159,14 +159,20 @@ impl<'a> System<'a> for Sys {
                             }
                         }
                         // Tell client to delete entities in the region
-                        for (&uid, _) in (&uids, region.entities()).join() {
-                            client.send_fallible(ServerGeneral::DeleteEntity(uid));
+                        let uids_to_delete: Vec<Uid> = (&uids, region.entities())
+                            .join()
+                            .map(|(&uid, _)| uid)
+                            .collect();
+                        if !uids_to_delete.is_empty() {
+                            client.send_fallible(ServerGeneral::DeleteEntities(uids_to_delete));
                         }
                     }
                     // Send deleted entities since they won't be processed for this client
                     // in entity sync
-                    for uid in deleted_entities.get_deleted_in_region(key).iter() {
-                        client.send_fallible(ServerGeneral::DeleteEntity(*uid));
+                    let deleted_in_region: Vec<Uid> =
+                        deleted_entities.get_deleted_in_region(key).iter().copied().collect();
+                    if !deleted_in_region.is_empty() {
+                        client.send_fallible(ServerGeneral::DeleteEntities(deleted_in_region));
                     }
                 }
 
@@ -180,29 +186,27 @@ impl<'a> System<'a> for Sys {
                     if subscription.regions.insert(key)
                         && let Some(region) = region_map.get(key)
                     {
-                        (
-                                &positions,
-                                velocities.maybe(),
-                                orientations.maybe(),
-                                region.entities(),
-                                &entities,
-                            )
-                                .join()
-                                .filter(|(_, _, _, _, e)| *e != client_entity)
-                                .filter_map(|(pos, vel, ori, _, entity)| {
-                                    tracked_comps.create_entity_package(
-                                        entity,
-                                        Some(*pos),
-                                        vel.copied(),
-                                        ori.copied(),
-                                    )
-                                })
-                                // TODO: batch this into a single message
-                                .for_each(|msg| {
-                                    // Send message to create entity and tracked components and
-                                    // physics components
-                                    client.send_fallible(ServerGeneral::CreateEntity(msg));
-                                })
+                        let packages: Vec<_> = (
+                            &positions,
+                            velocities.maybe(),
+                            orientations.maybe(),
+                            region.entities(),
+                            &entities,
+                        )
+                            .join()
+                            .filter(|(_, _, _, _, e)| *e != client_entity)
+                            .filter_map(|(pos, vel, ori, _, entity)| {
+                                tracked_comps.create_entity_package(
+                                    entity,
+                                    Some(*pos),
+                                    vel.copied(),
+                                    ori.copied(),
+                                )
+                            })
+                            .collect();
+                        if !packages.is_empty() {
+                            client.send_fallible(ServerGeneral::BatchCreateEntities(packages));
+                        }
                     }
                 }
             }
@@ -231,28 +235,27 @@ pub fn initialize_region_subscription(world: &World, entity: specs::Entity) {
         let tracked_comps = TrackedStorages::fetch(world);
         for key in &regions {
             if let Some(region) = region_map.get(*key) {
-                (
-                    &world.read_storage::<Pos>(), // We assume all these entities have a position
+                let packages: Vec<_> = (
+                    &world.read_storage::<Pos>(),
                     world.read_storage::<Vel>().maybe(),
                     world.read_storage::<Ori>().maybe(),
                     region.entities(),
                     &world.entities(),
                 )
-                .join()
-                // Don't send client its own components because we do that below
-                .filter(|t| t.4 != entity)
-                .filter_map(|(pos, vel, ori, _, entity)|
-                    tracked_comps.create_entity_package(
-                        entity,
-                        Some(*pos),
-                        vel.copied(),
-                        ori.copied(),
-                    )
-                )
-                .for_each(|msg| {
-                    // Send message to create entity and tracked components and physics components
-                    client.send_fallible(ServerGeneral::CreateEntity(msg));
-                });
+                    .join()
+                    .filter(|t| t.4 != entity)
+                    .filter_map(|(pos, vel, ori, _, entity)| {
+                        tracked_comps.create_entity_package(
+                            entity,
+                            Some(*pos),
+                            vel.copied(),
+                            ori.copied(),
+                        )
+                    })
+                    .collect();
+                if !packages.is_empty() {
+                    client.send_fallible(ServerGeneral::BatchCreateEntities(packages));
+                }
             }
         }
         // If client position was modified it might not be updated in the region system
