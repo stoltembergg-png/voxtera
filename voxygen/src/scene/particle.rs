@@ -3960,8 +3960,6 @@ impl ParticleMgr {
                 + (rng.random::<f32>() < avg_particles.fract()) as usize;
             let chosen = smoke_properties
                 .sample_weighted(&mut rng, particle_count, |smoker| smoker.strength);
-            // Return the allocation to the reused buffer
-            self.smoke_properties_buf = smoke_properties;
             if let Ok(chosen) = chosen {
                 self.particles.extend(chosen.map(|smoker| {
                     Particle::new(
@@ -3977,6 +3975,8 @@ impl ParticleMgr {
                     )
                 }));
             }
+            // Return the allocation to the reused buffer
+            self.smoke_properties_buf = smoke_properties;
         }
     }
 
