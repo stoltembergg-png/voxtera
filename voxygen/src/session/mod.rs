@@ -289,8 +289,7 @@ impl SessionState {
                     // Play notification sound for private messages (Tells)
                     if matches!(m.chat_type, ChatType::Tell(..)) {
                         let sfx_triggers = self.scene.sfx_mgr.triggers.read();
-                        let sfx_trigger_item =
-                            sfx_triggers.0.get_key_value(&SfxEvent::Bleep);
+                        let sfx_trigger_item = sfx_triggers.0.get_key_value(&SfxEvent::Bleep);
                         global_state
                             .audio
                             .emit_ui_sfx(sfx_trigger_item, Some(0.4), None);
@@ -1724,6 +1723,25 @@ impl PlayState for SessionState {
                     current_artist: self.scene.music_mgr().current_artist(),
                     active_channels: global_state.audio.get_num_active_channels(),
                     audio_cpu_usage: global_state.audio.get_cpu_usage(),
+                    internal_resolution_scale: global_state
+                        .window
+                        .renderer()
+                        .internal_resolution()
+                        .map(|v| v.x as f32)
+                        .unwrap_or(0.0),
+                    num_shadow_chunks: self.scene.terrain().shadow_chunk_count() as u32,
+                    aa_mode: match global_state.settings.graphics.render_mode.aa {
+                        crate::render::AaMode::Fxaa => "FXAA",
+                        crate::render::AaMode::Taa => "TAA",
+                        crate::render::AaMode::MsaaX4 => "MSAA x4",
+                        crate::render::AaMode::MsaaX8 => "MSAA x8",
+                        crate::render::AaMode::MsaaX16 => "MSAA x16",
+                        crate::render::AaMode::Hqx => "HQX",
+                        crate::render::AaMode::FxUpscale => "FXUpscale",
+                        crate::render::AaMode::Bilinear => "Bilinear",
+                        crate::render::AaMode::None => "None",
+                    },
+                    pipeline_creation: global_state.window.renderer().pipeline_creation_status(),
                 }
             });
 
