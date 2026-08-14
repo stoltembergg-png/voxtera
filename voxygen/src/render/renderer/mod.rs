@@ -407,7 +407,8 @@ impl Renderer {
                     .contains(Usages::RENDER_ATTACHMENT | Usages::COPY_SRC | Usages::TEXTURE_BINDING);
 
                 let msaa_flags = match pipeline_modes.aa {
-                    AaMode::None | AaMode::Fxaa | AaMode::Hqx | AaMode::FxUpscale | AaMode::Bilinear => Flags::empty(),
+                    AaMode::None | AaMode::Fxaa | AaMode::Hqx | AaMode::FxUpscale
+                    | AaMode::Bilinear | AaMode::Taa => Flags::empty(),
                     AaMode::MsaaX4 => Flags::MULTISAMPLE_X4,
                     AaMode::MsaaX8 => Flags::MULTISAMPLE_X8,
                     AaMode::MsaaX16 => Flags::MULTISAMPLE_X8, // TODO?
