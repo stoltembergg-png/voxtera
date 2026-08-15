@@ -1,0 +1,13 @@
+SpawnEntry (
+    name: "Dragon wildlife.",
+    note: "Dragons soaring through the skies of Voxtera.",
+    rules: [
+        Pack(
+            groups: [
+                (1, (1, 1, "common.entity.wild.peaceful.reddragon")),
+            ],
+            spawn_mode: Air(64),
+            day_period: [Morning, Noon, Evening, Night],
+        ),
+    ],
+)

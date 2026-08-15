@@ -2,7 +2,7 @@
 (
     name: Automatic,
     body: RandomWith("reddragon"),
-    alignment: Alignment(Owned),
+    alignment: Alignment(Wild),
     loot: LootTable("common.loot_tables.creature.dragon"),
     inventory: (
         loadout: FromBody,
