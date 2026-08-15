@@ -246,6 +246,7 @@ fn do_command(
         ServerChatCommand::DestroyTethers => handle_destroy_tethers,
         ServerChatCommand::Mount => handle_mount,
         ServerChatCommand::Dismount => handle_dismount,
+        ServerChatCommand::SummonDragon => handle_summon_dragon,
     };
 
     handler(server, client, target, args, cmd)
@@ -4429,15 +4430,13 @@ fn handle_join_faction(
                 // Localised: the key is resolved by the client in the language the player
                 // selected in their settings.
                 server.state.send_chat(
-                    ChatType::FactionMeta(faction.clone()).into_msg(
-                        Content::localized_with_args(
-                            "hud-chat-meta-faction-joined",
-                            [
-                                ("alias", LocalizationArg::from(alias.clone())),
-                                ("faction", LocalizationArg::from(faction.clone())),
-                            ],
-                        ),
-                    ),
+                    ChatType::FactionMeta(faction.clone()).into_msg(Content::localized_with_args(
+                        "hud-chat-meta-faction-joined",
+                        [
+                            ("alias", LocalizationArg::from(alias.clone())),
+                            ("faction", LocalizationArg::from(faction.clone())),
+                        ],
+                    )),
                     false,
                 );
             }
@@ -4457,15 +4456,13 @@ fn handle_join_faction(
             && emit_join_message
         {
             server.state.send_chat(
-                ChatType::FactionMeta(faction.clone()).into_msg(
-                    Content::localized_with_args(
-                        "hud-chat-meta-faction-left",
-                        [
-                            ("alias", LocalizationArg::from(alias.clone())),
-                            ("faction", LocalizationArg::from(faction.clone())),
-                        ],
-                    ),
-                ),
+                ChatType::FactionMeta(faction.clone()).into_msg(Content::localized_with_args(
+                    "hud-chat-meta-faction-left",
+                    [
+                        ("alias", LocalizationArg::from(alias.clone())),
+                        ("faction", LocalizationArg::from(faction.clone())),
+                    ],
+                )),
                 false,
             );
         }
@@ -6653,4 +6650,76 @@ fn handle_spot(
     _: &ServerChatCommand,
 ) -> CmdResult<()> {
     Err(Content::localized("command-spot-world_feature"))
+}
+
+fn handle_summon_dragon(
+    server: &mut Server,
+    client: EcsEntity,
+    target: EcsEntity,
+    _args: Vec<String>,
+    _action: &ServerChatCommand,
+) -> CmdResult<()> {
+    let entity_config = "common.entity.wild.peaceful.reddragon";
+
+    let config = match Ron::<EntityConfig>::load(entity_config) {
+        Ok(asset) => asset.read(),
+        Err(_err) => {
+            return Err(Content::localized_with_args(
+                "command-entity-load-failed",
+                [("config", entity_config)],
+            ));
+        },
+    };
+
+    // Get player position and UID (for Ownership alignment)
+    let comp::Pos(pos) = position(server, target, "target")?;
+    let player_uid = server
+        .state
+        .ecs()
+        .read_storage::<Uid>()
+        .get(target)
+        .copied()
+        .ok_or_else(|| Content::Plain("Player has no UID".into()))?;
+
+    let mut loadout_rng = rng();
+    let mut entity_info = EntityInfo::at(pos).with_entity_config(
+        config.clone().into_inner(),
+        Some(entity_config),
+        &mut loadout_rng,
+        None,
+    );
+
+    // Set alignment to Owned by the player so the dragon is their pet
+    entity_info.alignment = comp::Alignment::Owned(player_uid);
+
+    match SpawnEntityData::from_entity_info(entity_info) {
+        SpawnEntityData::Special(_, _) => {
+            return Err(Content::localized("command-unimplemented-spawn-special"));
+        },
+        SpawnEntityData::Npc(data) => {
+            let (npc_builder, _) = data.to_npc_builder();
+
+            server
+                .state
+                .ecs()
+                .read_resource::<EventBus<CreateNpcEvent>>()
+                .emit_now(CreateNpcEvent {
+                    pos: comp::Pos(pos),
+                    ori: comp::Ori::default(),
+                    npc: npc_builder,
+                });
+        },
+    }
+
+    server.notify_client(
+        client,
+        ServerGeneral::server_msg(
+            ChatType::CommandInfo,
+            Content::Plain(
+                "Dragon summoned! Use /mount to ride it, then press Fly to take off.".into(),
+            ),
+        ),
+    );
+
+    Ok(())
 }

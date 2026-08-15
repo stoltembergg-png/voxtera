@@ -43,6 +43,7 @@ command-delete_location-desc = Delete a location
 command-destroy_tethers-desc = Destroy all tethers connected to you
 command-disconnect_all_players-desc = Disconnects all players from the server
 command-dismount-desc = Dismount if you are riding, or dismount anything riding you
+command-summon_dragon-desc = Summon a tamed dragon at your location that you can mount and fly
 command-dropall-desc = Drops all your items on the ground
 command-dummy-desc = Spawns a training dummy
 command-explosion-desc = Explodes the ground around you
