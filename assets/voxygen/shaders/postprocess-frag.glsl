@@ -207,7 +207,10 @@ void main() {
         aa_color = mix(aa_color, bloom, BLOOM_FACTOR);
     #endif
 
-    // Tonemapping
+    // Tonemapping — ACES Filmic (Narkowicz approximation)
+    // Preserves highlights and shadows better than the previous Reinhard
+    // (1 - exp(-x)) operator. ACES gives a more cinematic look with
+    // natural rolloff in bright areas.
     float exposure_offset = 1.0;
     // Adding an in-code offset to gamma and exposure let us have more precise control over the game's look
     #ifdef EXPERIMENTAL_CINEMATIC
@@ -215,7 +218,14 @@ void main() {
     #else
         float gamma_offset = 0.3;
     #endif
-    aa_color.rgb = vec3(1.0) - exp(-aa_color.rgb * (gamma_exposure.y + exposure_offset));
+    vec3 hdr_color = aa_color.rgb * (gamma_exposure.y + exposure_offset);
+    // ACES Narkowicz filmic tonemapping
+    const float a = 2.51;
+    const float b = 0.03;
+    const float c = 2.43;
+    const float d = 0.59;
+    const float e = 0.14;
+    aa_color.rgb = clamp((hdr_color * (a * hdr_color + b)) / (hdr_color * (c * hdr_color + d) + e), 0.0, 1.0);
     // gamma correction
     aa_color.rgb = pow(aa_color.rgb, vec3(gamma_exposure.x + gamma_offset));
     
