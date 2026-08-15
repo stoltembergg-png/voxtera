@@ -146,6 +146,14 @@ float dither(ivec2 p, float level) {
     return step((dither[p.x % 8][p.y % 8]+1) * 0.016, level);
 }
 
+// Reconstruct view-space position from screen UV and depth
+vec3 reconstruct_view_pos(vec2 screen_uv, float depth, mat4 proj_inv) {
+    // Convert UV to NDC
+    vec4 ndc = vec4(screen_uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    vec4 view_pos = proj_inv * ndc;
+    return view_pos.xyz / view_pos.w;
+}
+
 void main() {
 #ifdef EXPERIMENTAL_BAREMINIMUM
     tgt_color = vec4(texelFetch(sampler2D(t_src_color, s_src_color), ivec2(uv * textureSize(sampler2D(t_src_color, s_src_color), 0)), 0).rgb, 1);
@@ -206,6 +214,67 @@ void main() {
         #endif
         aa_color = mix(aa_color, bloom, BLOOM_FACTOR);
     #endif
+
+    // Simple SSAO — Screen-Space Ambient Occlusion
+    // Samples the depth buffer in a small kernel to estimate occlusion from
+    // nearby geometry. Darkens areas where geometry is close, adding depth
+    // to interiors and dense areas.
+    {
+        // Reconstruct view-space position from depth
+        float depth = textureLod(sampler2D(t_src_depth, s_src_depth), sample_uv, 0).r;
+        vec3 frag_pos = reconstruct_view_pos(sample_uv, depth, proj_mat_inv);
+
+        // SSAO parameters
+        const int SSAO_KERNEL_SIZE = 16;
+        const float SSAO_RADIUS = 0.5;
+        const float SSAO_BIAS = 0.025;
+        const float SSAO_INTENSITY = 1.2;
+
+        // Kernel samples — hemisphere oriented along view normal
+        // Approximate normal from depth (cross product of depth gradients)
+        vec3 ddx = dFdx(frag_pos);
+        vec3 ddy = dFdy(frag_pos);
+        vec3 normal = normalize(cross(ddy, ddx));
+
+        float occlusion = 0.0;
+        // Fixed sample offsets (hemisphere)
+        const vec3 SAMPLES[16] = vec3[16](
+            vec3( 0.351, 0.123, 0.512), vec3(-0.234, 0.456, 0.378),
+            vec3( 0.198,-0.321, 0.645), vec3(-0.456,-0.123, 0.489),
+            vec3( 0.321, 0.654, 0.234), vec3(-0.123, 0.789, 0.312),
+            vec3( 0.567,-0.234, 0.456), vec3(-0.345, 0.234, 0.567),
+            vec3( 0.123,-0.567, 0.534), vec3(-0.678, 0.345, 0.298),
+            vec3( 0.456, 0.567, 0.345), vec3(-0.234,-0.456, 0.623),
+            vec3( 0.345,-0.678, 0.234), vec3(-0.567,-0.234, 0.456),
+            vec3( 0.678, 0.345, 0.123), vec3(-0.345,-0.567, 0.423)
+        );
+
+        for (int i = 0; i < SSAO_KERNEL_SIZE; i++) {
+            // Rotate sample by noise vector (simple rotation)
+            vec3 sample_pos = SAMPLES[i];
+            // Flip hemisphere to match normal
+            if (dot(sample_pos, normal) < 0.0)
+                sample_pos = -sample_pos;
+            sample_pos = sample_pos * SSAO_RADIUS + frag_pos;
+
+            // Project sample to screen space
+            vec4 offset = proj_mat_inv * vec4(sample_pos, 1.0);
+            offset.xy /= offset.w;
+            offset.xy = offset.xy * 0.5 + 0.5;
+
+            // Sample depth at projected position
+            float sample_depth = textureLod(sampler2D(t_src_depth, s_src_depth), offset.xy, 0).r;
+            vec3 sampled_pos = reconstruct_view_pos(offset.xy, sample_depth, proj_mat_inv);
+
+            // Check if the sample is occluded
+            float range_check = smoothstep(0.0, 1.0, SSAO_RADIUS / abs(frag_pos.z - sampled_pos.z));
+            occlusion += (sampled_pos.z >= sample_pos.z + SSAO_BIAS ? 1.0 : 0.0) * range_check;
+        }
+        occlusion = 1.0 - (occlusion / float(SSAO_KERNEL_SIZE)) * SSAO_INTENSITY;
+        occlusion = clamp(occlusion, 0.0, 1.0);
+        // Apply occlusion — darken areas with more occlusion
+        aa_color.rgb *= occlusion;
+    }
 
     // Tonemapping — ACES Filmic (Narkowicz approximation)
     // Preserves highlights and shadows better than the previous Reinhard
