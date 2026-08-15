@@ -528,8 +528,13 @@ impl<'a> System<'a> for Sys {
         }
 
         // Remove all force flags.
-        for force_update in (&mut force_updates).join() {
-            force_update.clear();
+        // Only iterate if there are any ForceUpdate components at all —
+        // avoids an unnecessary join over the storage when no entity was
+        // flagged this tick.
+        if !force_updates.is_empty() {
+            for force_update in (&mut force_updates).join() {
+                force_update.clear();
+            }
         }
 
         // Sync resources
@@ -566,6 +571,13 @@ fn should_sync_client_physics(
     is_rider: &ReadStorage<'_, Is<Rider>>,
     editable_settings: &EditableSettings,
 ) -> bool {
+    // Fast path: check force_update and rider first — these are O(1) lookups
+    // that avoid the more expensive player UUID → settings HashMap lookup
+    // in the common case where neither is set.
+    if force_updates.get(entity).is_some_and(|f| f.is_forced()) || is_rider.contains(entity) {
+        return true;
+    }
+
     let server_authoritative_physics = players.get(entity).is_none_or(|player| {
         player_physics_settings
             .settings
@@ -578,9 +590,7 @@ fn should_sync_client_physics(
     // Don't send client physics updates about itself unless force update is
     // set or the client is subject to
     // server-authoritative physics
-    force_updates.get(entity).is_some_and(|f| f.is_forced())
-        || server_authoritative_physics
-        || is_rider.contains(entity)
+    server_authoritative_physics
 }
 
 /// Adds physics components if `send_now` is true or `Option<Last<T>>` is
