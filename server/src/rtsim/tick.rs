@@ -433,6 +433,7 @@ fn get_actor_entity_info(
                 },
                 species => unimplemented!("rtsim spawning for {:?}", species),
             },
+            Body::Dragon(_) => "common.entity.wild.peaceful.reddragon",
             body => unimplemented!("rtsim spawning for {:?}", body),
         };
         let entity_config = EntityConfig::from_asset_expect_owned(config_asset)

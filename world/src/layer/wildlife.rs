@@ -545,6 +545,17 @@ pub fn spawn_manifest() -> Vec<(&'static str, DensityFn)> {
         ("world.wildlife.spawn.desert.rock", |c, col| {
             close(c.temp, CONFIG.desert_temp + 0.2, 0.05) * col.rock_density * BASE_DENSITY * 4.0
         }),
+        // **Dragons** — flying spawns across all biomes, rarer than normal wildlife
+        ("world.wildlife.spawn.dragon_sky", |c, _col| {
+            // Dragons spawn everywhere but very rarely
+            // Higher chance in mountains and temperate zones
+            let mountain_bonus = if c.alt > CONFIG.sea_level + 200.0 {
+                3.0
+            } else {
+                1.0
+            };
+            BASE_DENSITY * 0.6 * mountain_bonus
+        }),
     ]
 }
 
