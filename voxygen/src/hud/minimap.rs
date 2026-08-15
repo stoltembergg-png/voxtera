@@ -403,6 +403,14 @@ widget_ids! {
         location_marker_group[],
         voxel_minimap,
         draggable_area,
+        // Legend
+        legend_bg,
+        legend_group_icon,
+        legend_group_text,
+        legend_site_icon,
+        legend_site_text,
+        legend_player_icon,
+        legend_player_text,
     }
 }
 
@@ -1019,6 +1027,59 @@ impl Widget for MiniMap<'_> {
             {
                 events.push(Event::SettingsChange(MinimapShow(!show_minimap)));
             }
+        }
+
+        // Legend — small color key shown below minimap frame when open
+        if show_minimap {
+            const LEGEND_FONT: u32 = 10;
+            let legend_y = minimap_pos.y + scaled_map_window_size.y + 2.0;
+            let legend_w = 170.0 * scale;
+            // Semi-transparent background
+            Rectangle::fill_with([legend_w, 16.0 * scale], color::rgba(0.0, 0.0, 0.0, 0.4))
+                .top_right_with_margins_on(ui.window, legend_y, minimap_pos.x)
+                .set(state.ids.legend_bg, ui);
+
+            // Group marker (blue)
+            Image::new(self.imgs.indicator_group)
+                .w_h(10.0, 10.0)
+                .top_left_with_margins_on(state.ids.legend_bg, 3.0, 4.0)
+                .set(state.ids.legend_group_icon, ui);
+            Text::new("Group")
+                .font_id(self.fonts.cyri.conrod_id)
+                .font_size(self.fonts.cyri.scale(LEGEND_FONT))
+                .right_from(state.ids.legend_group_icon, 2.0)
+                .color(Some(color::WHITE))
+                .set(state.ids.legend_group_text, ui);
+
+            // Site marker (yellow)
+            Image::new(
+                self.imgs
+                    .mmap_site_icons_bgs
+                    .first()
+                    .copied()
+                    .unwrap_or(self.imgs.mmap_plus),
+            )
+            .w_h(10.0, 10.0)
+            .right_from(state.ids.legend_group_text, 8.0)
+            .set(state.ids.legend_site_icon, ui);
+            Text::new("Sites")
+                .font_id(self.fonts.cyri.conrod_id)
+                .font_size(self.fonts.cyri.scale(LEGEND_FONT))
+                .right_from(state.ids.legend_site_icon, 2.0)
+                .color(Some(color::WHITE))
+                .set(state.ids.legend_site_text, ui);
+
+            // Player marker (white)
+            Image::new(self.rot_imgs.indicator_mmap.target_player)
+                .w_h(10.0, 10.0)
+                .right_from(state.ids.legend_site_text, 8.0)
+                .set(state.ids.legend_player_icon, ui);
+            Text::new("You")
+                .font_id(self.fonts.cyri.conrod_id)
+                .font_size(self.fonts.cyri.scale(LEGEND_FONT))
+                .right_from(state.ids.legend_player_icon, 2.0)
+                .color(Some(color::WHITE))
+                .set(state.ids.legend_player_text, ui);
         }
 
         // TODO: Subregion name display
