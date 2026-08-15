@@ -2,8 +2,8 @@ use common::{
     combat::RiderEffects,
     comp::{
         Body, Buff, BuffCategory, BuffChange, Buffs, CharacterActivity, CharacterState, Collider,
-        ControlAction, Controller, InputKind, Mass, Ori, PhysicsState, Pos, Scale, Stats, Vel,
-        buff::DestInfo,
+        ControlAction, Controller, InputAttr, InputKind, Mass, Ori, PhysicsState, Pos, Scale,
+        Stats, Vel, buff::DestInfo,
     },
     event::{BuffEvent, EmitExt},
     event_emitters,
@@ -195,6 +195,22 @@ impl<'a> System<'a> for Sys {
             {
                 controller.inputs = inputs;
                 controller.actions = actions;
+
+                // For flying mounts (dragons), auto-engage fly input when airborne
+                // to prevent the mount from falling out of the sky if the rider
+                // hasn't explicitly toggled fly. The fly_thrust check ensures
+                // this only applies to bodies that can actually fly.
+                if let Some(body) = bodies.get(entity)
+                    && body.fly_thrust().is_some()
+                    && physics_states
+                        .get(entity)
+                        .is_none_or(|ps| ps.on_ground.is_none())
+                {
+                    controller.queued_inputs.insert(InputKind::Fly, InputAttr {
+                        select_pos: None,
+                        target_entity: None,
+                    });
+                }
             }
         }
 
