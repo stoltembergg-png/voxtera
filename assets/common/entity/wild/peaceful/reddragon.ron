@@ -1,0 +1,11 @@
+#![enable(implicit_some)]
+(
+    name: Automatic,
+    body: RandomWith("reddragon"),
+    alignment: Alignment(Owned),
+    loot: LootTable("common.loot_tables.creature.dragon"),
+    inventory: (
+        loadout: FromBody,
+    ),
+    meta: [],
+)

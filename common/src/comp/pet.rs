@@ -40,6 +40,7 @@ pub fn is_tameable(body: &Body) -> bool {
     // Currently only Quadruped animals can be tamed pending further work
     // on the pets feature (allowing larger animals to be tamed will
     // require balance issues to be addressed).
+    // Dragons are tameable to allow them to be used as flying mounts.
     match body {
         Body::QuadrupedMedium(quad_med) => !matches!(
             quad_med.species,
@@ -52,6 +53,7 @@ pub fn is_tameable(body: &Body) -> bool {
         | Body::QuadrupedSmall(_)
         | Body::BirdMedium(_)
         | Body::Crustacean(_) => true,
+        Body::Dragon(_) => true,
         _ => false,
     }
 }

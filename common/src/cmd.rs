@@ -462,6 +462,7 @@ pub enum ServerChatCommand {
     Whitelist,
     Wiring,
     World,
+    SummonDragon,
 }
 
 impl ServerChatCommand {
@@ -1159,6 +1160,11 @@ impl ServerChatCommand {
                 Content::localized("command-dismount-desc"),
                 Some(Admin),
             ),
+            ServerChatCommand::SummonDragon => cmd(
+                vec![],
+                Content::localized("command-summon_dragon-desc"),
+                Some(Admin),
+            ),
         }
     }
 
@@ -1267,6 +1273,7 @@ impl ServerChatCommand {
             ServerChatCommand::DestroyTethers => "destroy_tethers",
             ServerChatCommand::Mount => "mount",
             ServerChatCommand::Dismount => "dismount",
+            ServerChatCommand::SummonDragon => "summon_dragon",
         }
     }
 
@@ -1316,10 +1323,7 @@ impl ServerChatCommand {
         Self::iter()
             .filter_map(|c| c.short_keyword().map(|s| (s, c)))
             .chain(Self::iter().map(|c| (c.keyword(), c)))
-            .chain(
-                Self::iter()
-                    .flat_map(|c| c.aliases().iter().copied().map(move |s| (s, c))),
-            )
+            .chain(Self::iter().flat_map(|c| c.aliases().iter().copied().map(move |s| (s, c))))
     }
 
     pub fn needs_role(&self) -> Option<comp::AdminRole> { self.data().needs_role }
