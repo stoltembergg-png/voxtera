@@ -43,7 +43,7 @@ pub use loot_scroller::LootMessage;
 pub use settings_window::ScaleChange;
 pub use subtitles::Subtitle;
 
-use admin_panel::AdminPanel;
+use admin_panel::{AdminPanel, AdminPanelEvent};
 use bag::Bag;
 use buffs::BuffsBar;
 use buttons::Buttons;
@@ -4028,8 +4028,48 @@ impl Hud {
                 .get(info.viewpoint_entity)
                 .is_some();
             if is_admin {
-                let _ = AdminPanel::new(&self.imgs, &self.fonts, i18n, client)
+                let uid_to_alias: std::collections::HashMap<Uid, String> = client
+                    .player_list()
+                    .iter()
+                    .map(|(uid, info)| (*uid, info.player_alias.clone()))
+                    .collect();
+                let admin_events = AdminPanel::new(&self.imgs, &self.fonts, i18n, client)
                     .set(self.ids.admin_panel, ui_widgets);
+                for event in admin_events {
+                    match event {
+                        admin_panel::AdminPanelEvent::Kick(uid) => {
+                            if let Some(alias) = uid_to_alias.get(&uid) {
+                                events.push(Event::SendCommand("kick".to_owned(), vec![
+                                    alias.clone(),
+                                ]));
+                            }
+                        },
+                        admin_panel::AdminPanelEvent::TeleportTo(uid) => {
+                            if let Some(alias) = uid_to_alias.get(&uid) {
+                                events.push(Event::SendCommand("goto".to_owned(), vec![
+                                    alias.clone(),
+                                ]));
+                            }
+                        },
+                        admin_panel::AdminPanelEvent::BringPlayer(uid) => {
+                            if let Some(alias) = uid_to_alias.get(&uid) {
+                                events
+                                    .push(Event::SendCommand("tp".to_owned(), vec![alias.clone()]));
+                            }
+                        },
+                        admin_panel::AdminPanelEvent::Announce(msg) => {
+                            events.push(Event::SendCommand("announce".to_owned(), vec![msg]));
+                        },
+                        admin_panel::AdminPanelEvent::TogglePvp => {
+                            events.push(Event::SendCommand("battlemode".to_owned(), vec![
+                                "pvp".to_owned(),
+                            ]));
+                        },
+                        admin_panel::AdminPanelEvent::ToggleGodmode => {
+                            events.push(Event::SendCommand("godmode".to_owned(), vec![]));
+                        },
+                    }
+                }
             } else {
                 // Non-admins can never open it; close it silently
                 self.show.admin_panel = false;
