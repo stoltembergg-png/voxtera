@@ -33,6 +33,16 @@ class WorkflowSecurityContractTests(unittest.TestCase):
         self.assertRegex(mirror, r"(?m)^permissions:\s*$")
         self.assertRegex(mirror, r"(?m)^\s+contents:\s+read\s*$")
 
+    def test_mirror_clones_upstream_master_and_pushes_fork_main(self) -> None:
+        mirror = (WORKFLOWS / "mirror.yml").read_text(encoding="utf-8")
+        self.assertIn("git clone --branch master", mirror)
+        self.assertIn("HEAD:refs/heads/main", mirror)
+        self.assertIn("MIRROR_TOKEN_GITHUB", mirror)
+        self.assertIn("GIT_LFS_SHA256", mirror)
+        self.assertIn("sha256sum --check --strict", mirror)
+        self.assertNotIn("github.ref_name", mirror)
+        self.assertNotIn("uses: veloren/.github/.github/workflows/mirror.yml", mirror)
+
     def test_ui_writes_slider_value_as_text(self) -> None:
         ui = (ROOT / "server-cli" / "src" / "web" / "ui" / "ui.js").read_text(
             encoding="utf-8"
