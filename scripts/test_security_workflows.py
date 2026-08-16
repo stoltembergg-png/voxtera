@@ -35,11 +35,41 @@ class WorkflowSecurityContractTests(unittest.TestCase):
 
     def test_mirror_clones_upstream_master_and_pushes_fork_main(self) -> None:
         mirror = (WORKFLOWS / "mirror.yml").read_text(encoding="utf-8")
-        self.assertIn("git clone --branch master", mirror)
-        self.assertIn("HEAD:refs/heads/main", mirror)
-        self.assertIn("MIRROR_TOKEN_GITHUB", mirror)
-        self.assertIn("GIT_LFS_SHA256", mirror)
-        self.assertIn("sha256sum --check --strict", mirror)
+        steps = {
+            block.splitlines()[0]: block
+            for block in re.split(r"(?m)^      - name: ", mirror)[1:]
+        }
+        download = steps["Download and move Git LFS"]
+        clone = steps["Clone upstream master"]
+        push = steps["Push mirror to fork main"]
+        non_push = "\n".join(
+            block for name, block in steps.items() if name != "Push mirror to fork main"
+        )
+
+        self.assertEqual(
+            "git clone --branch master https://gitlab.com/veloren/veloren.git source",
+            next(
+                line.strip()
+                for line in clone.splitlines()
+                if line.strip().startswith("run: ")
+            ).removeprefix("run: "),
+        )
+        archive = "git-lfs-linux-amd64-v${GIT_LFS_VERSION}.tar.gz"
+        self.assertIn(
+            f'echo "${{GIT_LFS_SHA256}}  {archive}" | sha256sum --check --strict',
+            download,
+        )
+        self.assertLess(download.index("sha256sum --check --strict"), download.index("tar xzf"))
+        self.assertIn("MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN_GITHUB }}", push)
+        self.assertNotIn("MIRROR_TOKEN", non_push)
+        self.assertIn(
+            'GIT_CONFIG_VALUE_0="AUTHORIZATION: bearer ${MIRROR_TOKEN}"',
+            push,
+        )
+        self.assertIn(
+            "GIT_TERMINAL_PROMPT=0 git push --force --tags origin HEAD:refs/heads/main",
+            push,
+        )
         self.assertNotIn("github.ref_name", mirror)
         self.assertNotIn("uses: veloren/.github/.github/workflows/mirror.yml", mirror)
 
