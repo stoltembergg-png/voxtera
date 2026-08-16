@@ -26,10 +26,19 @@ class VoxygenUiCompileContractTests(unittest.TestCase):
 
     def test_minimap_legend_uses_valid_color_and_image_ids(self) -> None:
         source = MINIMAP.read_text(encoding="utf-8")
+        legend_start = source.index(
+            "// Legend — small color key shown below minimap frame when open",
+        )
+        legend_end = source.index(
+            "// TODO: Subregion name display",
+            legend_start,
+        )
+        legend = source[legend_start:legend_end]
 
-        self.assertNotIn(".color(Some(color::WHITE))", source)
-        self.assertNotIn("self.imgs.mmap_site_icons_bgs", source)
-        self.assertIn("self.imgs.mmap_site_town_bg", source)
+        self.assertNotIn(".color(Some(color::WHITE))", legend)
+        self.assertNotIn("self.imgs.mmap_site_icons_bgs", legend)
+        self.assertEqual(legend.count(".color(color::WHITE)"), 3)
+        self.assertIn("Image::new(self.imgs.mmap_site_town_bg)", legend)
 
 
 if __name__ == "__main__":
