@@ -127,6 +127,9 @@ jobs:
       - name: Validate release workflow contract
         working-directory: scripts
         run: python -m unittest test_release_workflow -v
+      - name: Validate Voxygen UI compile contract
+        working-directory: scripts
+        run: python -m unittest test_voxygen_ui_compile_contract -v
       - name: Validate GLIBC compatibility gate
         working-directory: scripts
         run: python -m unittest test_verify_glibc_compatibility -v
