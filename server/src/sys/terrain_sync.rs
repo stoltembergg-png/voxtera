@@ -28,6 +28,10 @@ fn blocks_in_player_vd(
         .any(|&chunk| super::terrain::chunk_in_vd(player_chunk_pos, player_vd_sqr, chunk))
 }
 
+fn has_syncable_terrain_changes(terrain_changes: &TerrainChanges) -> bool {
+    !terrain_changes.modified_chunks.is_empty() || !terrain_changes.modified_blocks.is_empty()
+}
+
 /// This systems sends modified chunks (existing chunks that had a new chunk
 /// generated) to clients as well as block modifications in existing chunks.
 #[derive(Default)]
@@ -61,6 +65,10 @@ impl<'a> System<'a> for Sys {
             clients,
         ): Self::SystemData,
     ) {
+        if !has_syncable_terrain_changes(&terrain_changes) {
+            return;
+        }
+
         let max_view_distance = server_settings.max_view_distance.unwrap_or(u32::MAX);
         #[cfg(feature = "worldgen")]
         let world_size = world.sim().get_size();
@@ -159,8 +167,23 @@ impl<'a> System<'a> for Sys {
 
 #[cfg(test)]
 mod tests {
-    use super::blocks_in_player_vd;
-    use vek::Vec2;
+    use super::{blocks_in_player_vd, has_syncable_terrain_changes};
+    use common::terrain::Block;
+    use common_state::TerrainChanges;
+    use vek::{Vec2, Vec3};
+
+    #[test]
+    fn terrain_sync_skips_when_no_chunks_or_blocks_changed() {
+        let mut changes = TerrainChanges::default();
+        assert!(!has_syncable_terrain_changes(&changes));
+
+        changes.modified_chunks.insert(Vec2::zero());
+        assert!(has_syncable_terrain_changes(&changes));
+
+        changes.modified_chunks.clear();
+        changes.modified_blocks.insert(Vec3::zero(), Block::empty());
+        assert!(has_syncable_terrain_changes(&changes));
+    }
 
     #[test]
     fn blocks_in_vd_returns_true_when_chunk_overlaps() {
