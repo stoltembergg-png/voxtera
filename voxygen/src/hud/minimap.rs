@@ -1048,25 +1048,19 @@ impl Widget for MiniMap<'_> {
                 .font_id(self.fonts.cyri.conrod_id)
                 .font_size(self.fonts.cyri.scale(LEGEND_FONT))
                 .right_from(state.ids.legend_group_icon, 2.0)
-                .color(Some(color::WHITE))
+                .color(color::WHITE)
                 .set(state.ids.legend_group_text, ui);
 
             // Site marker (yellow)
-            Image::new(
-                self.imgs
-                    .mmap_site_icons_bgs
-                    .first()
-                    .copied()
-                    .unwrap_or(self.imgs.mmap_plus),
-            )
-            .w_h(10.0, 10.0)
-            .right_from(state.ids.legend_group_text, 8.0)
-            .set(state.ids.legend_site_icon, ui);
+            Image::new(self.imgs.mmap_site_town_bg)
+                .w_h(10.0, 10.0)
+                .right_from(state.ids.legend_group_text, 8.0)
+                .set(state.ids.legend_site_icon, ui);
             Text::new("Sites")
                 .font_id(self.fonts.cyri.conrod_id)
                 .font_size(self.fonts.cyri.scale(LEGEND_FONT))
                 .right_from(state.ids.legend_site_icon, 2.0)
-                .color(Some(color::WHITE))
+                .color(color::WHITE)
                 .set(state.ids.legend_site_text, ui);
 
             // Player marker (white)
@@ -1078,7 +1072,7 @@ impl Widget for MiniMap<'_> {
                 .font_id(self.fonts.cyri.conrod_id)
                 .font_size(self.fonts.cyri.scale(LEGEND_FONT))
                 .right_from(state.ids.legend_player_icon, 2.0)
-                .color(Some(color::WHITE))
+                .color(color::WHITE)
                 .set(state.ids.legend_player_text, ui);
         }
 

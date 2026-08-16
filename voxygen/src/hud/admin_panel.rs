@@ -11,9 +11,8 @@ use super::{Fonts, Imgs, TEXT_COLOR};
 use client::Client;
 use common::uid::Uid;
 use conrod_core::{
-    Button, Colorable, Positionable, Scrollbar, Sizeable, Text, TextBox, Widget, WidgetCommon,
-    color,
-    widget::{self, Canvas, List, scrollbar},
+    Colorable, Positionable, Sizeable, Widget, WidgetCommon, color,
+    widget::{self, Button, Canvas, List, Scrollbar, Text, TextBox},
     widget_ids,
 };
 use i18n::Localization;
